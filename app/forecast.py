@@ -154,12 +154,13 @@ class ForecastService:
     async def _apply_market(self, fx: Fixture, fc: Forecast, dc: ScoreMatrix, lam: float, mu: float) -> ScoreMatrix:
         """Pre-match: replace DC rates by market-implied rates (best performer in scripts/market_eval.py)
         when fresh 1X2 + O/U 2.5 prices exist. Falls back to DC and says why."""
+        per_fx = getattr(self.odds, "get_prematch_odds_for_fixture", None)
         getter = getattr(self.odds, "get_prematch_odds", None)
-        if getter is None:
+        if per_fx is None and getter is None:
             fc.flags.append("market odds not available -> Dixon-Coles only")
             return dc
         try:
-            rows = await getter(fx.match_id.split(":", 1)[1])
+            rows = await per_fx(fx) if per_fx else await getter(fx.match_id.split(":", 1)[1])
         except Exception as e:
             fc.flags.append(f"market odds error ({type(e).__name__}) -> Dixon-Coles only")
             return dc

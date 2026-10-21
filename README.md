@@ -60,6 +60,13 @@ Not tested (no data): exact-score EV/ROI (no historical exact-score odds) and li
 opening/closing columns). `app/odds/movement.py` tracks movement from the bot's own stored snapshots; its default 8%
 threshold is **uncalibrated** — run `scripts/calibrate_movement.py` on football-data.co.uk CSVs (PSH→PSCH) locally to set it.
 
+## Free odds source without a key: football-data.co.uk
+Set `ODDS_PROVIDER=football-data-uk` (1X2 + O/U 2.5 only, upcoming matches ≤14 days) or
+`ODDS_PROVIDER=api-football+football-data-uk` (API-Football first, the free site as fallback when <2 bookmakers quote 1X2;
+exact-score odds still come from API-Football). Teams are matched by fuzzy name + date (±1 day); no match → no odds, never a guess.
+The CSV has no timestamp, so price age equals download time (cached 30 min). The layout follows the site's notes
+and is covered only by a synthetic-sample test — verify with a real `/pick` once the host is reachable.
+
 ## Known limitations
 - Not production-ready or validated for betting: no live-card/stoppage modelling, no PostgreSQL/Redis, no per-user settings,
   no lineup/xG features, exact-score feeds usually lack an "other" selection (so no de-vig is claimed).
