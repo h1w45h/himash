@@ -91,3 +91,13 @@ threshold is **uncalibrated** — run `scripts/calibrate_movement.py` on footbal
 - M6: load/security testing, deployment runbook and monitoring
 
 See `docs/TECHNICAL_SPEC.md` for the full specification.
+
+## Operations
+- **Backup:** the whole state is one SQLite file in the `fesi_data` volume. Stop the bot, then
+  `docker compose run --rm -v $PWD:/backup bot python -c "import sqlite3;s=sqlite3.connect('/data/fesi.sqlite3');d=sqlite3.connect('/backup/fesi.bak');s.backup(d)"`.
+  Restore by copying the file back to `/data/fesi.sqlite3` while the bot is stopped. Encrypt backups at rest.
+- **Schema changes:** tables are created idempotently at start-up (`CREATE TABLE IF NOT EXISTS`); there is no migration tool yet.
+- **Troubleshooting:** `/status` shows provider configuration and last successful call. "Access denied" = your id is not in
+  `TELEGRAM_ALLOWED_USER_IDS`. "Forecast unavailable: only N completed matches" = the plan/season returns too little history
+  (lower `MIN_TRAINING_MATCHES` only knowingly). HTTP 403/429 from a provider = bad key or quota; the client retries with backoff
+  and opens a circuit breaker after 5 consecutive failures.
