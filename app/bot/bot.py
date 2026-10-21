@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from app.bot.format import DISCLAIMER, fmt_fixture, fmt_forecast, fmt_odds
+from app.bot.format import DISCLAIMER, fmt_fixture, fmt_forecast, fmt_odds, fmt_pick
 from app.bot.security import RateLimiter, is_allowed
 from app.config import Settings
 from app.forecast import ForecastService
@@ -114,6 +114,15 @@ class FesiBot:
         if not fc.available:
             return await self._reply(update, fmt_forecast(fc))
         await self._reply(update, fmt_odds(fc, await self.svc.odds_view(fc), self.s.ev_min_threshold))
+
+    @guarded
+    async def pick(self, update, ctx):
+        fx = await self._fixture(update, ctx)
+        if not fx:
+            return
+        fc = await self.svc.forecast(fx)
+        pk = self.svc.pick(fc, await self.svc.exact_prices(fc) if fc.available else None)
+        await self._reply(update, fmt_pick(pk))
 
     @guarded
     async def integrity(self, update, ctx):
@@ -222,7 +231,7 @@ def build_application(s: Settings, service: ForecastService, db: Database) -> Ap
     bot = FesiBot(s, service, db)
     app = Application.builder().token(s.telegram_bot_token).build()
     for name in ("start", "help", "today", "match", "score", "live", "odds", "integrity", "watch",
-                 "unwatch", "report", "settings", "status"):
+                 "unwatch", "pick", "report", "settings", "status"):
         app.add_handler(CommandHandler(name, getattr(bot, name)))
     app.job_queue.run_repeating(bot.poll_watches, interval=max(s.live_poll_seconds, 30), first=15)
     return app

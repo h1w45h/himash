@@ -27,6 +27,11 @@ def fmt_forecast(fc: Forecast) -> str:
         lines.append(f"Live {cur}, minute {f.minute}")
     lines.append(f"Model {escape(fc.model_version)} | generated {fc.created_at:%H:%M:%S} UTC | "
                  f"provider data observed {f.observed_at:%H:%M:%S} UTC ({escape(f.provider)})")
+    lines.append(f"Rate source: {escape(fc.source)}")
+    if fc.movement:
+        mv = fc.movement
+        lines.append(f"Line movement ({mv['selection']} win): {mv['state']} — {escape(mv['detail'])} "
+                     "(neutral signal; default threshold uncalibrated)")
     lines.append(f"Expected goals: {fc.rates[0]:.2f} - {fc.rates[1]:.2f} | trained on {fc.n_train} matches")
     if fc.outcome:
         o = fc.outcome
@@ -58,4 +63,18 @@ def fmt_odds(fc: Forecast, ov: dict[str, Any], ev_min: float) -> str:
     out.append("EV = p×odds−1 before costs, limits and tax; uncertain, depends on model calibration.")
     if not ov["ev_alert_gate_passed"]:
         out.append("No value alert: out-of-sample calibration gate not passed / alerts disabled.")
+    return "\n".join(out)
+
+
+def fmt_pick(pk: dict[str, Any]) -> str:
+    if pk["status"] == "no_pick":
+        return f"No pick: {escape(pk['reason'])}"
+    out = [f"<b>Most likely exact score: {pk['score']}</b> — model p = {pk['p']:.1%} (source: {escape(pk['source'])})",
+           f"Fair odds {pk['fair_odds']:.2f}; minimum odds for +EV after buffer: <b>{pk['min_odds']:.2f}</b>"]
+    if "offered" in pk:
+        out.append(f"Best offered: {pk['offered']:.2f} → EV {pk['ev']:+.1%}")
+    verdict = {"bet": "PICK: price clears the bar.", "candidate": "CANDIDATE only: ",
+               "no_bet": "NO BET: ", "no_price": "NO PRICE: "}[pk["status"]]
+    out.append(verdict + escape(pk.get("reason", "")))
+    out.append("Even the best exact score hits only ~1 time in 8; expect frequent losses. Estimate, not advice.")
     return "\n".join(out)

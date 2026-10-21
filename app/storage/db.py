@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS integrity_item(
   id INTEGER PRIMARY KEY, status TEXT NOT NULL, source_url TEXT NOT NULL, publisher TEXT NOT NULL,
   published TEXT, retrieved_at TEXT NOT NULL, subject TEXT NOT NULL, competition TEXT,
   summary TEXT NOT NULL, source_type TEXT, snippet_hash TEXT, review_state TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS odds_snapshot(
+  id INTEGER PRIMARY KEY, match_id TEXT NOT NULL, market TEXT NOT NULL, observed_at TEXT NOT NULL,
+  probs TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS ix_odds_match ON odds_snapshot(match_id, market, observed_at);
 CREATE TABLE IF NOT EXISTS backtest_run(id INTEGER PRIMARY KEY, created_at TEXT, competition TEXT, payload TEXT);
 """
 
@@ -84,6 +88,17 @@ class Database:
 
     def integrity_items(self) -> list[sqlite3.Row]:
         return self.conn.execute("SELECT * FROM integrity_item").fetchall()
+
+    def save_odds_snapshot(self, match_id: str, market: str, observed_at: datetime, probs: dict) -> None:
+        self.conn.execute("INSERT INTO odds_snapshot(match_id,market,observed_at,probs) VALUES(?,?,?,?)",
+                          (match_id, market, observed_at.isoformat(), json.dumps(probs)))
+        self.conn.commit()
+
+    def first_last_odds(self, match_id: str, market: str):
+        q = "SELECT observed_at, probs FROM odds_snapshot WHERE match_id=? AND market=? ORDER BY observed_at "
+        a = self.conn.execute(q + "ASC LIMIT 1", (match_id, market)).fetchone()
+        b = self.conn.execute(q + "DESC LIMIT 1", (match_id, market)).fetchone()
+        return a, b
 
     def save_backtest(self, competition: str, payload: dict) -> None:
         self.conn.execute("INSERT INTO backtest_run(created_at,competition,payload) VALUES(?,?,?)",

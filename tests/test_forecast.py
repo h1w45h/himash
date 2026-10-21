@@ -60,3 +60,40 @@ async def test_stale_live_feed_suppressed():
     live = Fixture(**{**live.__dict__, "minute": 30, "observed_at": datetime.now(UTC) - timedelta(minutes=10)})
     f = await svc.forecast(live)
     assert not f.available and "stale" in f.reason
+
+
+class FakeOdds:
+    name = "fake"
+
+    def __init__(self, over=1.9, under=1.9, stale=False):
+        self.rows = []
+        t = datetime.now(UTC) - timedelta(hours=5 if stale else 0)
+        for bm in ("A", "B"):
+            for sel, o in (("home", 2.0), ("draw", 3.4), ("away", 3.9)):
+                self.rows.append({"bookmaker": bm, "market": "1x2", "selection": sel, "odds": o, "observed_at": t})
+            for sel, o in (("over", over), ("under", under)):
+                self.rows.append({"bookmaker": bm, "market": "ou25", "selection": sel, "odds": o, "observed_at": t})
+
+    async def get_prematch_odds(self, mid):
+        return self.rows
+
+    async def get_exact_score_odds(self, mid):
+        return []
+
+
+async def test_market_implied_used_and_pick_gates():
+    svc = ForecastService(Settings(min_training_matches=20), FakeProvider(league()), FakeOdds(), Database(":memory:"))
+    f = await svc.forecast(fx(999, "T1", "T2", None, None, 1, "scheduled"))
+    assert f.available and f.source == "market-implied"
+    pk = svc.pick(f, {})
+    assert pk["status"] == "no_price" and pk["min_odds"] > pk["fair_odds"]
+    h, a, p = f.top[0]
+    assert svc.pick(f, {f"{h}:{a}": pk["fair_odds"] * 0.9})["status"] == "no_bet"
+    # price clears the bar but alerts disabled -> candidate, never an unconditional 'bet'
+    assert svc.pick(f, {f"{h}:{a}": pk["min_odds"] * 1.2})["status"] == "candidate"
+
+
+async def test_stale_market_falls_back_to_dc():
+    svc = ForecastService(Settings(min_training_matches=20), FakeProvider(league()), FakeOdds(stale=True), Database(":memory:"))
+    f = await svc.forecast(fx(999, "T1", "T2", None, None, 1, "scheduled"))
+    assert f.available and f.source == "dixon-coles"

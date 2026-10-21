@@ -37,3 +37,31 @@ def test_anomaly_states_are_neutral():
     assert cross_book_divergence({"a": 5.0}).state == "insufficient_data"
     assert cross_book_divergence({"a": 5, "b": 5.1, "c": 4.9, "d": 5.0, "e": 5.05, "f": 5.02}).state == "normal"
     assert cross_book_divergence({"a": 5, "b": 5.1, "c": 4.9, "d": 5.0, "e": 5.05, "f": 5.02, "g": 5.0, "h": 5.0, "i": 5.0, "j": 5.0, "k": 20.0}).state == "review"
+
+
+def test_market_implied_recovers_rates():
+    from app.models.dixon_coles import score_matrix
+    from app.models.market_implied import RHO, implied_rates
+    m = score_matrix(1.7, 0.9, RHO, 11)
+    i, j = __import__("numpy").indices(m.probs.shape)
+    lam, mu, err = implied_rates(m.probs[i > j].sum(), m.probs[i == j].sum(), m.probs[(i + j) > 2].sum())
+    assert abs(lam - 1.7) < 0.03 and abs(mu - 0.9) < 0.03 and err < 1e-3
+
+
+def test_movement_states():
+    from app.odds.movement import movement
+    assert movement(0.50, 0.56, 6).state == "shortening"
+    assert movement(0.50, 0.44, 6).state == "drifting"
+    assert movement(0.50, 0.51, 6).state == "stable"
+    assert movement(0.50, 0.60, 0.2).state == "insufficient_data"
+    assert movement(None, 0.6, 6).state == "insufficient_data"
+
+
+def test_parse_prematch_markets():
+    from app.providers.api_football import parse_prematch_markets
+    data = {"response": [{"bookmakers": [{"name": "X", "bets": [
+        {"id": 1, "values": [{"value": "Home", "odd": "2.0"}, {"value": "Draw", "odd": "3.4"}, {"value": "Away", "odd": "3.8"}]},
+        {"id": 5, "values": [{"value": "Over 2.5", "odd": "1.9"}, {"value": "Under 3.5", "odd": "1.2"}]}]}]}]}
+    rows = parse_prematch_markets(data, datetime.now(UTC))
+    assert {(r["market"], r["selection"]) for r in rows} == {
+        ("1x2", "home"), ("1x2", "draw"), ("1x2", "away"), ("ou25", "over")}

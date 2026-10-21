@@ -9,6 +9,7 @@ _LIVE = {"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"}
 _FINISHED = {"FT", "AET", "PEN"}
 _SCHEDULED = {"TBD", "NS"}
 EXACT_SCORE_BET_ID = 10  # API-Football "Exact Score" market
+MATCH_WINNER_BET_ID, GOALS_OU_BET_ID = 1, 5
 
 
 def _status(short: str) -> str:
@@ -68,6 +69,13 @@ class ApiFootballProvider:
         data = await self.client.get_json("/fixtures/events", {"fixture": provider_match_id})
         return data.get("response", []) if isinstance(data, dict) else []
 
+    async def get_prematch_odds(self, provider_match_id: str) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for bet in (MATCH_WINNER_BET_ID, GOALS_OU_BET_ID):
+            data = await self.client.get_json("/odds", {"fixture": provider_match_id, "bet": bet})
+            out += parse_prematch_markets(data, datetime.now(UTC))
+        return out
+
     async def get_exact_score_odds(self, provider_match_id: str) -> list[dict[str, Any]]:
         data = await self.client.get_json("/odds", {"fixture": provider_match_id, "bet": EXACT_SCORE_BET_ID})
         return parse_exact_score_odds(data, datetime.now(UTC))
@@ -90,4 +98,29 @@ def parse_exact_score_odds(data: Any, observed_at: datetime) -> list[dict[str, A
                         continue  # reject malformed prices
                     rows.append({"bookmaker": bm.get("name", "?"), "market": "exact_score",
                                  "selection": sel, "odds": odds, "observed_at": observed_at})
+    return rows
+
+
+def parse_prematch_markets(data: Any, observed_at: datetime) -> list[dict[str, Any]]:
+    """Rows for 1X2 (selection home/draw/away) and Over/Under 2.5 (over/under) from /odds."""
+    rows: list[dict[str, Any]] = []
+    for entry in (data.get("response", []) if isinstance(data, dict) else []):
+        for bm in entry.get("bookmakers", []):
+            for bet in bm.get("bets", []):
+                if bet.get("id") == MATCH_WINNER_BET_ID:
+                    market, names = "1x2", {"home": "home", "draw": "draw", "away": "away"}
+                elif bet.get("id") == GOALS_OU_BET_ID:
+                    market, names = "ou25", {"over 2.5": "over", "under 2.5": "under"}
+                else:
+                    continue
+                for v in bet.get("values", []):
+                    try:
+                        odds = float(v["odd"])
+                        sel = names.get(str(v["value"]).strip().lower())
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    if sel is None or not odds > 1.0:
+                        continue
+                    rows.append({"bookmaker": bm.get("name", "?"), "market": market, "selection": sel,
+                                 "odds": odds, "observed_at": observed_at})
     return rows

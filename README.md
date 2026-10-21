@@ -38,9 +38,27 @@ Telegram-first football analytics for pre-match and live exact-score probability
 - Gates: forecasts are suppressed on insufficient history, stale live feed or provider errors; value alerts stay off
   (`EV_ALERTS_ENABLED=false`) and require a passing walk-forward backtest vs. a baseline.
 - Storage: SQLite (`DATABASE_PATH`) — immutable forecast snapshots, watches, idempotent notification log, integrity items.
+- `/pick <id>`: most likely exact score, fair odds and the minimum odds for +EV; it says `bet` only when a fresh price clears the bar and value alerts are enabled, otherwise `candidate`/`no bet`.
 - Telegram: allowlist (fail-closed), per-user rate limit, all planned commands, watch alerts on goals / 60 min pre-kickoff.
 - Integrity: registry with the four evidence labels and review state; only `approved` items are ever shown. There is no
   ingestion job yet — items are added through `app.integrity.registry.add_item` and must be reviewed.
+
+## Market analysis test (real data, run with `python -I scripts/market_eval.py data/Matches.csv`)
+Data: free GitHub mirror of football-data.co.uk (`xgabora/Club-Football-Match-Data-2000-2025`, pre-match 1X2 and O/U 2.5
+prices). Test = 4,651 matches, E0/SP1/I1/D1/F1, 2023-07 → 2026-09, models trained on earlier data only.
+
+| model | exact-score log loss (lower = better) | top-1 hit rate |
+|---|---|---|
+| league-average Poisson | 3.042 | 11.7% |
+| Dixon–Coles (team form, 3y) | 2.937 | 12.5% |
+| blend 50/50 | 2.899 | 13.2% |
+| **market-implied (de-vigged 1X2 + O/U 2.5)** | **2.886** | **13.3%** |
+
+So pre-match prices are the strongest input; the bot uses them when ≥2 bookmakers quote 1X2 and O/U 2.5, and falls back to
+Dixon–Coles otherwise. Even the best scoreline is hit ~1 time in 8.
+Not tested (no data): exact-score EV/ROI (no historical exact-score odds) and line movement (the mirror has no
+opening/closing columns). `app/odds/movement.py` tracks movement from the bot's own stored snapshots; its default 8%
+threshold is **uncalibrated** — run `scripts/calibrate_movement.py` on football-data.co.uk CSVs (PSH→PSCH) locally to set it.
 
 ## Known limitations
 - Not production-ready or validated for betting: no live-card/stoppage modelling, no PostgreSQL/Redis, no per-user settings,
