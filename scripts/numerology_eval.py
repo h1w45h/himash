@@ -53,9 +53,9 @@ def main(path, test_start="2023-07-01"):
     h, a = t.FTHome.values.astype(int), t.FTAway.values.astype(int)
     pi_rho = -1 / math.pi
 
-    def rho_mats(l, m, rho):  # clip to the feasible range so every tau stays >= 0
-        rho = np.clip(rho, np.maximum(-1 / l, -1 / m), 1.0)
-        return mats(l, m, rho)
+    def rho_mats(lm, m, rho):  # clip to the feasible range so every tau stays >= 0
+        rho = np.clip(rho, np.maximum(-1 / lm, -1 / m), 1.0)
+        return mats(lm, m, rho)
 
     rows = [("control: market-implied", ll(mats(lam, mu), h, a))]
     for w in (0.1, 0.25):
