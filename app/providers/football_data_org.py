@@ -22,6 +22,7 @@ def normalize_match(m: dict[str, Any], observed_at: datetime) -> Fixture | None:
             home_id=str(m["homeTeam"]["id"]), home=str(m["homeTeam"]["name"]),
             away_id=str(m["awayTeam"]["id"]), away=str(m["awayTeam"]["name"]),
             home_goals=ft.get("home"), away_goals=ft.get("away"), observed_at=observed_at,
+            country=((m.get("area") or comp.get("area") or {}).get("name")),
         )
     except (KeyError, TypeError, ValueError):
         return None

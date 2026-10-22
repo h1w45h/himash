@@ -35,7 +35,7 @@ def normalize_fixture(item: dict[str, Any], observed_at: datetime) -> Fixture | 
             home_id=str(tm["home"]["id"]), home=str(tm["home"]["name"]),
             away_id=str(tm["away"]["id"]), away=str(tm["away"]["name"]),
             home_goals=gl.get("home"), away_goals=gl.get("away"), observed_at=observed_at,
-            venue_city=(fx.get("venue") or {}).get("city"),
+            venue_city=(fx.get("venue") or {}).get("city"), country=lg.get("country"),
         )
     except (KeyError, TypeError, ValueError):
         return None

@@ -5,7 +5,7 @@ from app.providers.api_football import ApiFootballProvider
 from app.providers.http import ProviderError, ResilientClient
 
 FIXTURE = {"fixture": {"id": 1, "date": "2026-01-01T15:00:00+00:00", "status": {"short": "NS", "elapsed": None}},
-           "league": {"id": 39, "name": "Premier League", "season": 2025},
+           "league": {"id": 39, "name": "Premier League", "season": 2025, "country": "England"},
            "teams": {"home": {"id": 1, "name": "A"}, "away": {"id": 2, "name": "B"}},
            "goals": {"home": None, "away": None}}
 
@@ -20,6 +20,7 @@ async def test_normalizes_and_drops_malformed():
         return httpx.Response(200, json={"response": [FIXTURE, {"bad": 1}]})
     p = ApiFootballProvider("k", client(h))
     fx = await p.get_fixtures("2026-01-01", "2026-01-01")
+    assert fx[0].country == "England"
     assert len(fx) == 1 and fx[0].match_id == "api-football:1" and fx[0].status == "scheduled"
     assert fx[0].kickoff.utcoffset().total_seconds() == 0
 

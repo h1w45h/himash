@@ -38,6 +38,7 @@ Telegram-first football analytics for pre-match and live exact-score probability
 - Gates: forecasts are suppressed on insufficient history, stale live feed or provider errors; value alerts stay off
   (`EV_ALERTS_ENABLED=false`) and require a passing walk-forward backtest vs. a baseline.
 - Storage: SQLite (`DATABASE_PATH`) — immutable forecast snapshots, watches, idempotent notification log, integrity items.
+- `/tips` and `/score <id>`: one line per match — country | tournament | teams | exact score (e.g. `England | Premier League | Arsenal — Chelsea | 2-1 (13%)`).
 - `/pick <id>`: most likely exact score, fair odds and the minimum odds for +EV; it says `bet` only when a fresh price clears the bar and value alerts are enabled, otherwise `candidate`/`no bet`.
 - Telegram: allowlist (fail-closed), per-user rate limit, all planned commands, watch alerts on goals / 60 min pre-kickoff.
 - Integrity: registry with the four evidence labels and review state; only `approved` items are ever shown. There is no

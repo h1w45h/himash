@@ -22,6 +22,7 @@ class Fixture:
     away_goals: int | None
     observed_at: datetime  # when the provider-side data was observed (fetch time)
     venue_city: str | None = None
+    country: str | None = None
 
 
 class FootballDataProvider(Protocol):

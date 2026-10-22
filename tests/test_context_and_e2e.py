@@ -94,10 +94,20 @@ async def test_every_command_runs_end_to_end(monkeypatch):
     def upd():
         return SimpleNamespace(effective_user=SimpleNamespace(id=7),
                                message=SimpleNamespace(reply_text=AsyncMock(side_effect=lambda t, **k: sent.append(t))))
-    for name, args in [("start", []), ("help", []), ("today", []), ("live", []), ("match", ["1"]), ("score", ["1"]),
+    for name, args in [("start", []), ("help", []), ("today", []), ("tips", []), ("live", []), ("match", ["1"]), ("score", ["1"]),
                        ("odds", ["1"]), ("pick", ["1"]), ("context", ["1"]), ("integrity", ["1"]), ("watch", ["1"]),
                        ("unwatch", ["1"]), ("report", []), ("settings", []), ("status", []), ("match", ["abc"])]:
         n = len(sent)
         await getattr(bot, name)(upd(), SimpleNamespace(args=args))
         assert len(sent) > n, name
         assert "Internal error" not in sent[-1], (name, sent[-1])
+
+
+async def test_line_format():
+    from app.bot.format import fmt_line
+    from app.forecast import Forecast
+    f = fx(1, "Arsenal", "Chelsea", None, None, 1, "scheduled")
+    f = type(f)(**{**f.__dict__, "country": "England", "competition": "Premier League"})
+    ok = Forecast(f, "prematch", True, top=[(2, 1, 0.126)])
+    assert fmt_line(ok) == "England | Premier League | Arsenal — Chelsea | <b>2-1</b> (13%)"
+    assert "прогноз недоступен: мало данных" in fmt_line(Forecast(f, "prematch", False, reason="мало данных"))

@@ -79,3 +79,13 @@ def fmt_pick(pk: dict[str, Any]) -> str:
     out.append(verdict + escape(pk.get("reason", "")))
     out.append("Even the best exact score hits only ~1 time in 8; expect frequent losses. Estimate, not advice.")
     return "\n".join(out)
+
+
+def fmt_line(fc: Forecast) -> str:
+    """Required short form: country | tournament | teams | exact score."""
+    f = fc.fixture
+    head = f"{escape(f.country or 'n/a')} | {escape(f.competition)} | {escape(f.home)} — {escape(f.away)}"
+    if not fc.available or not fc.top:
+        return f"{head} | прогноз недоступен: {escape(fc.reason or 'нет данных')}"
+    h, a, p = fc.top[0]
+    return f"{head} | <b>{h}-{a}</b> ({p:.0%})"

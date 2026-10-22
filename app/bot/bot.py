@@ -8,7 +8,7 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-from app.bot.format import DISCLAIMER, fmt_fixture, fmt_forecast, fmt_odds, fmt_pick
+from app.bot.format import DISCLAIMER, fmt_fixture, fmt_forecast, fmt_line, fmt_odds, fmt_pick
 from app.bot.security import RateLimiter, is_allowed
 from app.config import Settings
 from app.context.service import build_context, fmt_context
@@ -106,7 +106,22 @@ class FesiBot:
 
     @guarded
     async def score(self, update, ctx):
-        await self.match.__wrapped__(self, update, ctx)
+        fx = await self._fixture(update, ctx)
+        if fx:
+            await self._reply(update, fmt_line(await self.svc.forecast(fx)) + f"\n\n{DISCLAIMER}")
+
+    @guarded
+    async def tips(self, update, ctx):
+        """Today's not-yet-finished matches in the form: country | tournament | teams | exact score."""
+        if not self.svc.football:
+            return await self._reply(update, "No football data provider configured.")
+        d = datetime.now(UTC).date().isoformat()
+        fxs = sorted((f for f in await self.svc.football.get_fixtures(d, d) if f.status != "finished"),
+                     key=lambda f: f.kickoff)[:self.s.max_tips]
+        if not fxs:
+            return await self._reply(update, "No upcoming matches returned by the provider for today.")
+        lines = [fmt_line(await self.svc.forecast(f)) for f in fxs]
+        await self._reply(update, "\n".join(lines) + f"\n\n{DISCLAIMER}")
 
     @guarded
     async def odds(self, update, ctx):
@@ -242,7 +257,7 @@ def build_application(s: Settings, service: ForecastService, db: Database) -> Ap
         log.warning("TELEGRAM_ALLOWED_USER_IDS is empty: every user will be denied")
     bot = FesiBot(s, service, db)
     app = Application.builder().token(s.telegram_bot_token).build()
-    for name in ("start", "help", "today", "match", "score", "live", "odds", "integrity", "watch",
+    for name in ("start", "help", "today", "tips", "match", "score", "live", "odds", "integrity", "watch",
                  "unwatch", "pick", "context", "report", "settings", "status"):
         app.add_handler(CommandHandler(name, getattr(bot, name)))
     app.job_queue.run_repeating(bot.poll_watches, interval=max(s.live_poll_seconds, 30), first=15)
