@@ -82,6 +82,14 @@ So neither enters the probability formula. Fibonacci stays only as a stake-size 
 `python -I scripts/staking_sim.py` shows that with a ~12.6% hit rate it is ruinous (63–98% of simulated 300-bet runs bust a
 200-unit bankroll vs 0% for flat 1-unit staking), so `/pick` recommends flat staking.
 
+## Other scoreline models from the literature: compared, none added
+`python -I scripts/model_zoo_eval.py data/Matches.csv` — shape parameter fitted on 6,000 training matches, tested on 5,354
+later matches, every family re-solved to the same de-vigged 1X2 + O/U 2.5 prices (paired log-loss difference vs. the current model):
+Dixon–Coles with fitted ρ (−0.021) +0.0006 [−0.0004, +0.0016]; bivariate Poisson (λ3=0.023) +0.0007 [−0.0008, +0.0022];
+diagonal-inflated draws (+4.4%) +0.0002 [−0.0010, +0.0014]; negative binomial (r≈157, i.e. ≈Poisson) +0.0011 [+0.0006, +0.0017].
+All are statistically indistinguishable from, or worse than, the current model, so it stays unchanged. The gain comes from the
+market inputs, not from the shape of the distribution.
+
 ## Known limitations
 - Not production-ready or validated for betting: no live-card/stoppage modelling, no PostgreSQL/Redis, no per-user settings,
   no lineup/xG features, exact-score feeds usually lack an "other" selection (so no de-vig is claimed).
