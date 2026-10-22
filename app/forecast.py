@@ -10,6 +10,7 @@ from typing import Any
 
 from app.backtest.walkforward import BacktestReport, walk_forward
 from app.config import Settings
+from app.models.composite import composite_matrix
 from app.models.dixon_coles import (
     DCParams,
     MatchResult,
@@ -188,6 +189,9 @@ class ForecastService:
         fc.movement = {"selection": fav, "state": mv.state, "detail": mv.detail}
         fc.source = "market-implied"
         fc.flags.append(f"голы взяты из рынка без маржи (1X2 + тотал 2.5); сверка с Диксоном–Коулзом {lam:.2f}-{mu:.2f} против рынка {mlam:.2f}-{mmu:.2f}")
+        if self.s.composite_enabled:
+            fc.source = "market-implied+composite"
+            return composite_matrix(mlam, mmu, self.s.max_score_goals)
         return score_matrix(mlam, mmu, MARKET_RHO, self.s.max_score_goals)
 
     async def exact_prices(self, f: Forecast) -> dict[str, float]:

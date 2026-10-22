@@ -90,6 +90,15 @@ diagonal-inflated draws (+4.4%) +0.0002 [−0.0010, +0.0014]; negative binomial 
 All are statistically indistinguishable from, or worse than, the current model, so it stays unchanged. The gain comes from the
 market inputs, not from the shape of the distribution.
 
+## FESI composite formula (experimental, off: `COMPOSITE_ENABLED=false`)
+`P = norm([(1−w_e)·((1−a−b)·P_DC(ρ) + a·P_BIV(λ3) + b·P_DIAG(d)) + w_e·E]^τ)` — a mixture of the Dixon–Coles,
+bivariate-Poisson and diagonal-inflated families on the market-implied rates, an empirical scoreline-frequency prior E, and a
+temperature τ; fitted on a train window only (`python -I scripts/composite_fit.py data/Matches.csv`, ~2 min).
+Fitted: ρ=0.10 (at its bound), λ3≈0, d=+8.2%, weight on diagonal-inflated ≈1, w_e≈1%, τ=1.02.
+Result (paired log loss vs. current): validation 2022-23 (n=1,826) +0.0003 [−0.0016, +0.0023]; test 2023-26 (n=5,354)
+−0.0011 [−0.0022, +0.0000]. The validation window shows no gain and the test interval touches zero, so it is **not adopted**.
+An Elo + recent-form tilt (research only; live feeds lack these) added nothing on top (−0.0011 [−0.0023, +0.0002]).
+
 ## Known limitations
 - Not production-ready or validated for betting: no live-card/stoppage modelling, no PostgreSQL/Redis, no per-user settings,
   no lineup/xG features, exact-score feeds usually lack an "other" selection (so no de-vig is claimed).

@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     time_decay_xi: float = Field(default=0.0018, description="per-day exponential decay")
     ev_alerts_enabled: bool = False  # stays off until a backtest passes the calibration gate
     commands_per_minute: int = 20
+    composite_enabled: bool = False  # experimental formula; did not beat the plain market model (README)
     max_tips: int = 10  # forecasts per /tips call (each may cost provider requests)
 
     @property

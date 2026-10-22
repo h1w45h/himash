@@ -65,3 +65,15 @@ def test_parse_prematch_markets():
     rows = parse_prematch_markets(data, datetime.now(UTC))
     assert {(r["market"], r["selection"]) for r in rows} == {
         ("1x2", "home"), ("1x2", "draw"), ("1x2", "away"), ("ou25", "over")}
+
+
+def test_composite_matrix_valid():
+    import numpy as np
+
+    from app.models.composite import composite_matrix
+    from app.models.dixon_coles import score_matrix
+    m = composite_matrix(1.5, 1.1, 8)
+    assert np.all(np.isfinite(m.probs)) and np.all(m.probs >= 0)
+    base = score_matrix(1.5, 1.1, -0.05, 8)
+    assert abs(m.probs.sum() - base.probs.sum()) < 0.02  # mass roughly preserved on the grid
+    assert np.abs(m.probs - base.probs).max() < 0.02      # close to the plain model: gain is small by design
