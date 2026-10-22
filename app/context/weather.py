@@ -33,11 +33,11 @@ def summarize(payload: dict, kickoff: datetime) -> Weather | None:
         return None
     flags = []
     if p >= 2.0:
-        flags.append("heavy rain expected")
+        flags.append("ожидается сильный дождь")
     if w >= 35:
-        flags.append("strong wind")
+        flags.append("сильный ветер")
     if t <= 0 or t >= 32:
-        flags.append("extreme temperature")
+        flags.append("экстремальная температура")
     return Weather(t, p, w, flags)
 
 

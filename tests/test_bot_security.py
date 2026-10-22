@@ -35,10 +35,10 @@ def test_integrity_requires_https_and_review():
     add_item(db, status="official_investigation", source_url="https://x.org/a", publisher="P",
              subject="Club", competition="C", summary="Investigation announced.", source_type="federation")
     # unreviewed items are never shown
-    assert "No reviewed" in render_for_match(db, ["Club"], "C")
+    assert "Нет проверенных записей" in render_for_match(db, ["Club"], "C")
     db.conn.execute("UPDATE integrity_item SET review_state='approved'")
     out = render_for_match(db, ["Club"], "C")
-    assert "NOT a finding of guilt" in out
+    assert "НЕ установление вины" in out
 
 
 async def test_handler_denies_unlisted_user_and_serves_allowed():
@@ -56,6 +56,6 @@ async def test_handler_denies_unlisted_user_and_serves_allowed():
         return SimpleNamespace(effective_user=SimpleNamespace(id=uid), message=SimpleNamespace(reply_text=AsyncMock()))
     bad, good = upd(8), upd(7)
     await bot.today(bad, SimpleNamespace(args=[]))
-    assert "Access denied" in bad.message.reply_text.call_args[0][0]
+    assert "Доступ запрещён" in bad.message.reply_text.call_args[0][0]
     await bot.today(good, SimpleNamespace(args=[]))
-    assert "No football data provider configured" in good.message.reply_text.call_args[0][0]
+    assert "Источник футбольных данных не настроен" in good.message.reply_text.call_args[0][0]

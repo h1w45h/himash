@@ -31,9 +31,9 @@ def render_for_match(db: Database, names: list[str], competition: str) -> str:
     items = [i for i in db.integrity_items() if i["review_state"] == "approved"
              and (i["subject"] in names or i["competition"] == competition)]
     if not items:
-        return "No reviewed, source-backed integrity records for this match. (Absence of records is not a statement of integrity.)"
+        return "Нет проверенных записей с источниками по этому матчу. (Отсутствие записей не означает отсутствие проблем.)"
     lines = []
     for i in items:
         lines.append(f"[{i['status']}] {i['subject']} — {i['summary']}\n  {DISCLAIMER[IntegrityStatus(i['status'])]} "
-                     f"Source: {i['publisher']} {i['source_url']} (retrieved {i['retrieved_at'][:10]})")
+                     f"Источник: {i['publisher']} {i['source_url']} (получено {i['retrieved_at'][:10]})")
     return "\n".join(lines)

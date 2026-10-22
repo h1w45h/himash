@@ -35,8 +35,8 @@ def flags(news: dict[str, TeamNews], minutes_to_kickoff: float) -> list[str]:
     f = []
     published = all(n.starters == 11 for n in news.values())
     if not published:
-        f.append("lineups not published yet" + (" (<75 min to kickoff: market may still move)" if minutes_to_kickoff < 75 else ""))
+        f.append("составы ещё не опубликованы" + (" (<75 мин до начала: рынок ещё может сдвинуться)" if minutes_to_kickoff < 75 else ""))
     for n in news.values():
         if len(n.injured) >= 3:
-            f.append(f"{n.team}: {len(n.injured)} players listed injured/suspended")
+            f.append(f"{n.team}: {len(n.injured)} игроков в списке травмированных/дисквалифицированных")
     return f

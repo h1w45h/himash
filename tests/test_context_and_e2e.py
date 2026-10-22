@@ -19,7 +19,7 @@ def test_weather_summary_and_validation():
     p = {"hourly": {"time": ["2026-10-25T14:00", "2026-10-25T15:00"], "temperature_2m": [10, 11],
                     "precipitation": [0.0, 3.0], "wind_speed_10m": [10, 40]}}
     w = weather.summarize(p, K)
-    assert w and w.precip_mm == 3.0 and set(w.flags) == {"heavy rain expected", "strong wind"}
+    assert w and w.precip_mm == 3.0 and set(w.flags) == {"ожидается сильный дождь", "сильный ветер"}
     assert weather.summarize({"hourly": {"time": ["2026-10-25T15:00"]}}, K) is None  # missing fields
     assert weather.summarize(p, K + timedelta(days=2)) is None  # too far from kickoff
 
@@ -44,7 +44,7 @@ def test_lineup_flags():
     inj = [{"team": {"name": "A"}, "player": {"name": f"p{i}"}} for i in range(3)]
     n = lineups.summarize(lus, inj, "H", "A")
     f = lineups.flags(n, 30)
-    assert any("not published" in x for x in f) and any("3 players" in x for x in f)
+    assert any("не опубликованы" in x for x in f) and any("3 игроков" in x for x in f)
 
 
 class CtxProvider(FakeProvider):
@@ -70,7 +70,7 @@ async def test_context_fails_soft(monkeypatch):
     f = type(f)(**{**f.__dict__, "venue_city": "Leeds"})
     c = await build_context(f, CtxProvider([]))
     text = fmt_context(f, c)
-    assert "unavailable" in text and "does NOT change the probabilities" in text
+    assert "недоступно" in text and "вероятности НЕ меняет" in text
 
 
 async def test_every_command_runs_end_to_end(monkeypatch):

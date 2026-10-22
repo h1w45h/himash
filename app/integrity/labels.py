@@ -11,8 +11,8 @@ class IntegrityStatus(StrEnum):
 # Never infer guilt or publish unsupported personal accusations from market anomalies.
 
 DISCLAIMER = {
-    IntegrityStatus.OFFICIAL_SANCTION: "Official published decision.",
-    IntegrityStatus.OFFICIAL_INVESTIGATION: "Officially announced investigation; NOT a finding of guilt.",
-    IntegrityStatus.MARKET_ANOMALY: "Statistical signal requiring review; NOT evidence of wrongdoing.",
-    IntegrityStatus.UNVERIFIED_REPORT: "Unconfirmed report; makes no claim of guilt.",
+    IntegrityStatus.OFFICIAL_SANCTION: "Официально опубликованное решение.",
+    IntegrityStatus.OFFICIAL_INVESTIGATION: "Официально объявленное расследование; это НЕ установление вины.",
+    IntegrityStatus.MARKET_ANOMALY: "Статистический сигнал, требующий проверки; это НЕ доказательство нарушений.",
+    IntegrityStatus.UNVERIFIED_REPORT: "Неподтверждённое сообщение; вины не утверждает.",
 }
