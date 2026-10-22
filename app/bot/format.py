@@ -3,6 +3,7 @@ from typing import Any
 
 from app.forecast import Forecast
 from app.providers.contracts import Fixture
+from app.staking.fibonacci import losing_streak_prob, outlay_to_level
 
 DISCLAIMER = ("Exact-score outcomes are highly uncertain. Statistical estimates, not advice or a guarantee. "
               "18+ / gamble responsibly; obey local law.")
@@ -77,6 +78,11 @@ def fmt_pick(pk: dict[str, Any]) -> str:
     verdict = {"bet": "PICK: price clears the bar.", "candidate": "CANDIDATE only: ",
                "no_bet": "NO BET: ", "no_price": "NO PRICE: "}[pk["status"]]
     out.append(verdict + escape(pk.get("reason", "")))
+    if pk["status"] in ("candidate", "bet", "no_price"):
+        p = pk["p"]
+        out.append(f"Staking: flat 1 unit (<=1% of bankroll). Fibonacci ladder NOT recommended here: with p={p:.1%}, "
+                   f"P(8 losses in a row)={losing_streak_prob(p, 8):.0%}, and 7 losses cost {outlay_to_level(6)} units "
+                   "(simulation: scripts/staking_sim.py).")
     out.append("Even the best exact score hits only ~1 time in 8; expect frequent losses. Estimate, not advice.")
     return "\n".join(out)
 

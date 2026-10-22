@@ -74,6 +74,14 @@ informational context and as warnings on `/pick` (e.g. "lineups not published ye
 their effect is not validated here. These adapters are covered by mocked tests only; the hosts are blocked in the dev
 sandbox. Architecture and failure behaviour: `docs/ARCHITECTURE.md`.
 
+## Fibonacci and pi: tested, not used in the forecast
+`python -I scripts/numerology_eval.py data/Matches.csv` (5,286 matches, paired comparison vs. market-implied control):
+Fibonacci-weighted recent form (weights 1-1-2-3-5) and a pi-based correlation constant (rho = −1/π) both made exact-score
+log loss **worse** (+0.004 … +0.026, 95% CIs exclude zero); Fibonacci weights were also worse than equal weights.
+So neither enters the probability formula. Fibonacci stays only as a stake-size ladder (`app/staking/fibonacci.py`);
+`python -I scripts/staking_sim.py` shows that with a ~12.6% hit rate it is ruinous (63–98% of simulated 300-bet runs bust a
+200-unit bankroll vs 0% for flat 1-unit staking), so `/pick` recommends flat staking.
+
 ## Known limitations
 - Not production-ready or validated for betting: no live-card/stoppage modelling, no PostgreSQL/Redis, no per-user settings,
   no lineup/xG features, exact-score feeds usually lack an "other" selection (so no de-vig is claimed).
