@@ -50,7 +50,7 @@ async def test_prematch_forecast_valid():
 async def test_insufficient_data_suppressed():
     svc = ForecastService(Settings(min_training_matches=500), FakeProvider(league()), None, Database(":memory:"))
     f = await svc.forecast(fx(999, "T1", "T2", None, None, 1, "scheduled"))
-    assert not f.available and "completed matches" in f.reason
+    assert not f.available and "сыгранных матчей" in f.reason
 
 
 @pytest.mark.asyncio
@@ -59,7 +59,7 @@ async def test_stale_live_feed_suppressed():
     live = fx(999, "T1", "T2", 1, 0, 0, "live")
     live = Fixture(**{**live.__dict__, "minute": 30, "observed_at": datetime.now(UTC) - timedelta(minutes=10)})
     f = await svc.forecast(live)
-    assert not f.available and "stale" in f.reason
+    assert not f.available and "устарели" in f.reason
 
 
 class FakeOdds:

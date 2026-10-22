@@ -20,8 +20,8 @@ class Movement:
 def movement(open_prob: float | None, now_prob: float | None, hours_between: float,
              threshold: float = DEFAULT_SQUEEZE, min_hours: float = 1.0) -> Movement:
     if open_prob is None or now_prob is None or hours_between < min_hours or open_prob <= 0:
-        return Movement("insufficient_data", None, "need an earlier snapshot at least "
-                        f"{min_hours:.0f}h old")
+        return Movement("insufficient_data", None, "нужен более ранний снимок "
+                        f"не моложе {min_hours:.0f} ч")
     rel = now_prob / open_prob - 1.0
     state = "shortening" if rel >= threshold else "drifting" if rel <= -threshold else "stable"
-    return Movement(state, rel, f"implied {open_prob:.1%} -> {now_prob:.1%} ({rel:+.1%}) over {hours_between:.1f}h")
+    return Movement(state, rel, f"вероятность по коэффициентам {open_prob:.1%} → {now_prob:.1%} ({rel:+.1%}) за {hours_between:.1f} ч")

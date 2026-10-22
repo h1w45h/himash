@@ -82,8 +82,8 @@ class ForecastService:
         if cached and time.time() - cached[0] < HISTORY_TTL:
             return cached[1], cached[2], results
         if len(results) < self.s.min_training_matches:
-            raise InsufficientData(f"only {len(results)} completed matches available for {fx.competition} "
-                                   f"(need {self.s.min_training_matches})")
+            raise InsufficientData(f"доступно только {len(results)} сыгранных матчей турнира «{fx.competition}» "
+                                   f"(нужно {self.s.min_training_matches})")
         params = await asyncio.to_thread(fit, results, xi=self.s.time_decay_xi, as_of=datetime.now(UTC))
         self._models[key] = (time.time(), params, len(results))
         return params, len(results), results
@@ -92,13 +92,13 @@ class ForecastService:
         mode = "live" if fx.status == "live" else "prematch"
         base = Forecast(fx, mode, False, model_version=self.s.model_version)
         if fx.status == "finished":
-            base.reason = "match finished"
+            base.reason = "матч завершён"
             return base
         if not self.football:
-            base.reason = "no football data provider configured"
+            base.reason = "не настроен источник футбольных данных"
             return base
         if fx.season is None:
-            base.reason = "season unknown"
+            base.reason = "неизвестен сезон"
             return base
         try:
             params, n, results = await self._model(fx)
@@ -106,26 +106,26 @@ class ForecastService:
             base.reason = str(e)
             return base
         except Exception as e:
-            base.reason = f"data provider error ({type(e).__name__})"
+            base.reason = f"ошибка источника данных ({type(e).__name__})"
             return base
         for t, name in ((fx.home_id, fx.home), (fx.away_id, fx.away)):
             if params.matches_per_team.get(t, 0) < self.s.min_team_matches:
-                base.reason = f"insufficient history for {name} (<{self.s.min_team_matches} matches)"
+                base.reason = f"мало истории у команды {name} (<{self.s.min_team_matches} матчей)"
                 return base
         lam, mu = params.rates(fx.home_id, fx.away_id)
         base.n_train, base.rates = n, (lam, mu)
         if mode == "live":
             age = (datetime.now(UTC) - fx.observed_at).total_seconds()
             if age > self.s.live_stale_seconds:
-                base.reason = f"live feed stale ({int(age)}s)"
+                base.reason = f"данные live устарели ({int(age)} с)"
                 return base
             if fx.home_goals is None or fx.away_goals is None or fx.minute is None:
-                base.reason = "live score/minute missing"
+                base.reason = "нет счёта/минуты live"
                 return base
             m = live_score_matrix(lam, mu, params.rho, home_goals=fx.home_goals, away_goals=fx.away_goals,
                                   minute=fx.minute, max_goals=self.s.max_score_goals)
             base.offset = (fx.home_goals, fx.away_goals)
-            base.flags.append("live: constant-rate remaining-goals model; red cards/stoppage not modelled")
+            base.flags.append("live: модель оставшихся голов с постоянной интенсивностью; удаления и added time не учтены")
         else:
             m = score_matrix(lam, mu, params.rho, self.s.max_score_goals)
             m = await self._apply_market(fx, base, m, lam, mu)
@@ -141,9 +141,9 @@ class ForecastService:
             if bt:
                 self.db.save_backtest(fx.competition, bt.__dict__ | {"calibration": bt.calibration})
         bt = self.backtests.get(fx.competition_id)
-        base.flags.append("backtest: not enough data" if bt is None else
-                          f"backtest n={bt.n_test} logloss {bt.log_loss_model:.3f} vs baseline {bt.log_loss_baseline:.3f}"
-                          + (" (passed)" if bt.passed else " (NOT passed)"))
+        base.flags.append("бэктест: недостаточно данных" if bt is None else
+                          f"бэктест n={bt.n_test}: logloss {bt.log_loss_model:.3f} против базовой {bt.log_loss_baseline:.3f}"
+                          + (" (пройден)" if bt.passed else " (НЕ пройден)"))
         digest = hashlib.sha256(f"{fx.match_id}|{n}|{params.trained_until}|{lam:.6f}|{mu:.6f}|{params.rho:.6f}".encode()).hexdigest()[:16]
         base.snapshot_id = self.db.save_forecast(
             fx.match_id, self.s.model_version, mode, digest,
@@ -158,22 +158,22 @@ class ForecastService:
         per_fx = getattr(self.odds, "get_prematch_odds_for_fixture", None)
         getter = getattr(self.odds, "get_prematch_odds", None)
         if per_fx is None and getter is None:
-            fc.flags.append("market odds not available -> Dixon-Coles only")
+            fc.flags.append("рыночные коэффициенты недоступны → только модель Диксона–Коулза")
             return dc
         try:
             rows = await per_fx(fx) if per_fx else await getter(fx.match_id.split(":", 1)[1])
         except Exception as e:
-            fc.flags.append(f"market odds error ({type(e).__name__}) -> Dixon-Coles only")
+            fc.flags.append(f"ошибка коэффициентов ({type(e).__name__}) → только модель Диксона–Коулза")
             return dc
         now = datetime.now(UTC)
         rows = [r for r in rows if 0 <= (now - r["observed_at"]).total_seconds() <= self.s.odds_stale_seconds]
         p1, po = _consensus(rows, "1x2", ("home", "draw", "away")), _consensus(rows, "ou25", ("over", "under"))
         if p1 is None or po is None:
-            fc.flags.append("incomplete/stale 1X2 or O/U2.5 market -> Dixon-Coles only")
+            fc.flags.append("неполный/устаревший рынок 1X2 или тотал 2.5 → только модель Диксона–Коулза")
             return dc
         mlam, mmu, err = await asyncio.to_thread(implied_rates, p1[0], p1[1], po[0])
         if err > 0.02:
-            fc.flags.append(f"market-implied fit poor (rmse {err:.3f}) -> Dixon-Coles only")
+            fc.flags.append(f"плохая подгонка под рынок (rmse {err:.3f}) → только модель Диксона–Коулза")
             return dc
         self.db.save_odds_snapshot(fx.match_id, "1x2_ou25", now,
                                    {"home": p1[0], "draw": p1[1], "away": p1[2], "over25": po[0]})
@@ -187,7 +187,7 @@ class ForecastService:
             mv = movement(None, None, 0)
         fc.movement = {"selection": fav, "state": mv.state, "detail": mv.detail}
         fc.source = "market-implied"
-        fc.flags.append(f"rates from de-vigged market (1X2+O/U2.5); DC cross-check {lam:.2f}-{mu:.2f} vs market {mlam:.2f}-{mmu:.2f}")
+        fc.flags.append(f"голы взяты из рынка без маржи (1X2 + тотал 2.5); сверка с Диксоном–Коулзом {lam:.2f}-{mu:.2f} против рынка {mlam:.2f}-{mmu:.2f}")
         return score_matrix(mlam, mmu, MARKET_RHO, self.s.max_score_goals)
 
     async def exact_prices(self, f: Forecast) -> dict[str, float]:
@@ -203,36 +203,36 @@ class ForecastService:
         """Most likely exact score + the minimum odds at which it has positive expected value
         (after the configured EV buffer). Never claims certainty; 'bet' only if offered odds clear the bar."""
         if not f.available or f.mode != "prematch" or not f.top:
-            return {"status": "no_pick", "reason": f.reason or "pre-match forecast required"}
+            return {"status": "no_pick", "reason": f.reason or "нужен доматчевый прогноз"}
         h, a, p = f.top[0]
         fair = 1 / p
         need = fair * (1 + self.s.ev_min_threshold)
         out = {"score": f"{h}-{a}", "p": p, "fair_odds": fair, "min_odds": need, "source": f.source}
         offered = (exact_odds or {}).get(f"{h}:{a}")
         if offered is None:
-            return out | {"status": "no_price", "reason": "no fresh exact-score price; bet only if you find >= min_odds"}
+            return out | {"status": "no_price", "reason": "нет свежего коэффициента на точный счёт; ставка возможна, только если найдёте коэффициент не ниже минимального"}
         out["offered"] = offered
         out["ev"] = offered * p - 1
         if offered < need:
-            return out | {"status": "no_bet", "reason": "offered odds below required minimum"}
+            return out | {"status": "no_bet", "reason": "предложенный коэффициент ниже минимального"}
         if not (f.source == "market-implied" and self.s.ev_alerts_enabled):
-            return out | {"status": "candidate", "reason": "price clears the bar but value alerts are disabled / "
-                          "exact-score EV is not backtested (no historical exact-score odds)"}
+            return out | {"status": "candidate", "reason": "коэффициент проходит порог, но сигналы выключены / "
+                          "EV по точным счетам не проверен на истории (нет исторических коэффициентов)"}
         return out | {"status": "bet"}
 
     async def odds_view(self, f: Forecast) -> dict[str, Any]:
         """Exact-score odds vs model. EV is informational unless the calibration gate passed."""
         if not self.odds:
-            return {"available": False, "reason": "no odds provider configured"}
+            return {"available": False, "reason": "не настроен источник коэффициентов"}
         if f.mode != "prematch" or not f.available or f.matrix is None:
-            return {"available": False, "reason": "odds comparison only for available pre-match forecasts"}
+            return {"available": False, "reason": "сравнение с коэффициентами только для доматчевого прогноза"}
         try:
             rows = await self.odds.get_exact_score_odds(f.fixture.match_id.split(":", 1)[1])
         except Exception as e:
-            return {"available": False, "reason": f"odds provider error ({type(e).__name__})"}
+            return {"available": False, "reason": f"ошибка источника коэффициентов ({type(e).__name__})"}
         best = best_prices(rows, max_age_s=self.s.odds_stale_seconds)
         if not best:
-            return {"available": False, "reason": "no fresh exact-score odds"}
+            return {"available": False, "reason": "нет свежих коэффициентов на точный счёт"}
         complete = market_is_complete(set(best))
         devig = None
         if complete:
