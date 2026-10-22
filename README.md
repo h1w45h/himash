@@ -67,6 +67,12 @@ exact-score odds still come from API-Football). Teams are matched by fuzzy name 
 The CSV has no timestamp, so price age equals download time (cached 30 min). The layout follows the site's notes
 and is covered only by a synthetic-sample test — verify with a real `/pick` once the host is reachable.
 
+## Context: weather, lineups, news (`/context <id>`)
+Open-Meteo (weather at kickoff, by venue city), API-Football lineups/injuries and GDELT headlines are shown as
+informational context and as warnings on `/pick` (e.g. "lineups not published yet"). They do not alter probabilities —
+their effect is not validated here. These adapters are covered by mocked tests only; the hosts are blocked in the dev
+sandbox. Architecture and failure behaviour: `docs/ARCHITECTURE.md`.
+
 ## Known limitations
 - Not production-ready or validated for betting: no live-card/stoppage modelling, no PostgreSQL/Redis, no per-user settings,
   no lineup/xG features, exact-score feeds usually lack an "other" selection (so no de-vig is claimed).

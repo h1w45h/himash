@@ -1,6 +1,7 @@
 """Forecast service: provider data -> fitted model -> immutable snapshot with quality flags."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import time
 from dataclasses import dataclass, field
@@ -83,7 +84,7 @@ class ForecastService:
         if len(results) < self.s.min_training_matches:
             raise InsufficientData(f"only {len(results)} completed matches available for {fx.competition} "
                                    f"(need {self.s.min_training_matches})")
-        params = fit(results, xi=self.s.time_decay_xi, as_of=datetime.now(UTC))
+        params = await asyncio.to_thread(fit, results, xi=self.s.time_decay_xi, as_of=datetime.now(UTC))
         self._models[key] = (time.time(), params, len(results))
         return params, len(results), results
 
@@ -135,7 +136,7 @@ class ForecastService:
         if mode == "prematch":
             base.outcome = outcome_probs(m)
         if fx.competition_id not in self.backtests:
-            self.backtests[fx.competition_id] = walk_forward(results, xi=self.s.time_decay_xi)
+            self.backtests[fx.competition_id] = await asyncio.to_thread(walk_forward, results, xi=self.s.time_decay_xi)
             bt = self.backtests[fx.competition_id]
             if bt:
                 self.db.save_backtest(fx.competition, bt.__dict__ | {"calibration": bt.calibration})
@@ -170,7 +171,7 @@ class ForecastService:
         if p1 is None or po is None:
             fc.flags.append("incomplete/stale 1X2 or O/U2.5 market -> Dixon-Coles only")
             return dc
-        mlam, mmu, err = implied_rates(p1[0], p1[1], po[0])
+        mlam, mmu, err = await asyncio.to_thread(implied_rates, p1[0], p1[1], po[0])
         if err > 0.02:
             fc.flags.append(f"market-implied fit poor (rmse {err:.3f}) -> Dixon-Coles only")
             return dc

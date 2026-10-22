@@ -11,6 +11,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bot.format import DISCLAIMER, fmt_fixture, fmt_forecast, fmt_odds, fmt_pick
 from app.bot.security import RateLimiter, is_allowed
 from app.config import Settings
+from app.context.service import build_context, fmt_context
 from app.forecast import ForecastService
 from app.integrity.registry import render_for_match
 from app.storage.db import Database
@@ -28,6 +29,8 @@ class FesiBot:
     def guarded(fn):  # noqa: N805
         @functools.wraps(fn)
         async def wrapper(self, update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+            if update.message is None:
+                return  # edited messages / non-message updates carry nothing to answer
             uid = update.effective_user.id if update.effective_user else None
             if not is_allowed(uid, self.s.allowed_user_ids):
                 log.warning("unauthorized access attempt")
@@ -122,7 +125,17 @@ class FesiBot:
             return
         fc = await self.svc.forecast(fx)
         pk = self.svc.pick(fc, await self.svc.exact_prices(fc) if fc.available else None)
-        await self._reply(update, fmt_pick(pk))
+        text = fmt_pick(pk)
+        if fc.available:
+            cx = await build_context(fx, self.svc.football)
+            text += "".join(f"\n⚠ {f}" for f in cx["flags"])
+        await self._reply(update, text)
+
+    @guarded
+    async def context(self, update, ctx):
+        fx = await self._fixture(update, ctx)
+        if fx:
+            await self._reply(update, fmt_context(fx, await build_context(fx, self.svc.football)))
 
     @guarded
     async def integrity(self, update, ctx):
@@ -213,13 +226,12 @@ class FesiBot:
             for alert in alerts:
                 fc = await self.svc.forecast(fx)
                 for uid in users:
-                    key = (uid, mid, alert, "v1")
-                    if not self.db.claim_notification(uid, mid, key[2], key[3]):
+                    if not self.db.claim_notification(uid, mid, self.s.model_version, alert):
                         continue
                     try:
                         await ctx.bot.send_message(uid, fmt_forecast(fc), parse_mode=HTML)
                     except Exception:
-                        self.db.release_notification(uid, mid, key[2], key[3])  # retry next poll
+                        self.db.release_notification(uid, mid, self.s.model_version, alert)  # retry next poll
             await asyncio.sleep(0.2)  # provider/Telegram pacing
 
 
@@ -231,7 +243,7 @@ def build_application(s: Settings, service: ForecastService, db: Database) -> Ap
     bot = FesiBot(s, service, db)
     app = Application.builder().token(s.telegram_bot_token).build()
     for name in ("start", "help", "today", "match", "score", "live", "odds", "integrity", "watch",
-                 "unwatch", "pick", "report", "settings", "status"):
+                 "unwatch", "pick", "context", "report", "settings", "status"):
         app.add_handler(CommandHandler(name, getattr(bot, name)))
     app.job_queue.run_repeating(bot.poll_watches, interval=max(s.live_poll_seconds, 30), first=15)
     return app

@@ -35,6 +35,7 @@ def normalize_fixture(item: dict[str, Any], observed_at: datetime) -> Fixture | 
             home_id=str(tm["home"]["id"]), home=str(tm["home"]["name"]),
             away_id=str(tm["away"]["id"]), away=str(tm["away"]["name"]),
             home_goals=gl.get("home"), away_goals=gl.get("away"), observed_at=observed_at,
+            venue_city=(fx.get("venue") or {}).get("city"),
         )
     except (KeyError, TypeError, ValueError):
         return None
@@ -75,6 +76,14 @@ class ApiFootballProvider:
             data = await self.client.get_json("/odds", {"fixture": provider_match_id, "bet": bet})
             out += parse_prematch_markets(data, datetime.now(UTC))
         return out
+
+    async def get_lineups(self, provider_match_id: str) -> list[dict[str, Any]]:
+        data = await self.client.get_json("/fixtures/lineups", {"fixture": provider_match_id})
+        return data.get("response", []) if isinstance(data, dict) else []
+
+    async def get_injuries(self, provider_match_id: str) -> list[dict[str, Any]]:
+        data = await self.client.get_json("/injuries", {"fixture": provider_match_id})
+        return data.get("response", []) if isinstance(data, dict) else []
 
     async def get_exact_score_odds(self, provider_match_id: str) -> list[dict[str, Any]]:
         data = await self.client.get_json("/odds", {"fixture": provider_match_id, "bet": EXACT_SCORE_BET_ID})

@@ -32,7 +32,8 @@ def fmt_forecast(fc: Forecast) -> str:
         mv = fc.movement
         lines.append(f"Line movement ({mv['selection']} win): {mv['state']} — {escape(mv['detail'])} "
                      "(neutral signal; default threshold uncalibrated)")
-    lines.append(f"Expected goals: {fc.rates[0]:.2f} - {fc.rates[1]:.2f} | trained on {fc.n_train} matches")
+    what = "Expected REMAINING goals" if fc.mode == "live" else "Expected goals"
+    lines.append(f"{what}: {fc.rates[0]:.2f} - {fc.rates[1]:.2f} | trained on {fc.n_train} matches")
     if fc.outcome:
         o = fc.outcome
         lines.append(f"1X2: home {o['home']:.1%} / draw {o['draw']:.1%} / away {o['away']:.1%}")
