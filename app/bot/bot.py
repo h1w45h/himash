@@ -76,7 +76,7 @@ class FesiBot:
     @guarded
     async def help(self, update, ctx):
         await self._reply(update,
-            "/today — today's fixtures\n/match &lt;id&gt; — full analysis\n/score &lt;id&gt; — scoreline ranking\n"
+            "/today — today's fixtures\n/tips — today: country | tournament | teams | exact score\n/match &lt;id&gt; — full analysis\n/score &lt;id&gt; — one-line forecast\n"
             "/live — live matches\n/odds &lt;id&gt; — odds, fair odds, EV\n/integrity &lt;id&gt; — source-backed notes\n"
             "/watch &lt;id&gt; /unwatch &lt;id&gt; — goal/kickoff-hour alerts\n/report — model performance\n"
             "/settings — configuration (read-only)\n/status — provider health\n\n"
