@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { registerGame, type GameDefinition } from '@nastolki/game-engine';
+import { registerGame } from '@nastolki/game-engine';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../common/prisma.module';
 import { MatchmakingService } from '../matchmaking/matchmaking.service';
@@ -10,17 +10,9 @@ import { RoomsService } from './rooms.service';
 /** Интеграционный тест: нужен Postgres с применёнными миграциями и seed, плюс Redis. */
 const enabled = !!process.env.DATABASE_URL && !!process.env.REDIS_URL;
 
-// Минимальная игра-заглушка, чтобы проверить комнаты независимо от реальных движков.
-const dummy: GameDefinition<{ n: number }, 'pass'> = {
-  slug: 'chess', minPlayers: 2, maxPlayers: 2,
-  setup: () => ({ n: 0 }),
-  legalActions: () => ['pass'],
-  validate: () => ({ ok: true, value: undefined }),
-  apply: (s) => ({ n: s.n + 1 }),
-  currentSeats: () => [0],
-  outcome: () => null,
-  view: (s) => s,
-};
+import { countingGame } from '../../testing/counting-game';
+
+const dummy = countingGame;
 
 describe.skipIf(!enabled)('комнаты и матчмейкинг (интеграция)', () => {
   let prisma: PrismaService;

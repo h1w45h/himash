@@ -331,6 +331,7 @@ model Match {
   currentSeat  Int?
   turnDeadline DateTime?
   winnerSeats  Int[]
+  endReason    String? // checkmate / resign / timeout / abandoned...
   startedAt    DateTime    @default(now())
   finishedAt   DateTime?
 

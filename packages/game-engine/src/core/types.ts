@@ -49,6 +49,11 @@ export interface GameDefinition<State, Action, View = State, Options = unknown> 
   outcome(state: State): Outcome | null;
   /** Проекция состояния для игрока: скрытая информация (чужие карты) вырезается. */
   view(state: State, seat: Seat | null): View;
+  /**
+   * Что показывать зрителям о совершённом действии. Если действие раскрывает скрытую информацию
+   * (например, добор карты), игра вырезает её для всех, кроме `actor`. По умолчанию — действие как есть.
+   */
+  redactAction?(action: Action, actor: Seat, viewer: Seat | null): Action | null;
   /** Выбор хода ботом; отсутствует — для игры нет бота. */
   chooseBotAction?(state: State, seat: Seat, bot: BotContext): Action;
   /** Действие, выполняемое при истечении таймера хода. */

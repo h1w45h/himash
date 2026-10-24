@@ -281,7 +281,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         slug: room.game.slug,
         mode: 'ONLINE',
         variantKey: room.variantKey,
-        isRated: room.isRated,
+        // С ботами партия не рейтинговая: иначе можно «фармить» рейтинг.
+        isRated: room.isRated && !room.players.some((p) => p.isBot),
         turnTimeSec: room.turnTimeSec,
         seats: room.players.map((p) => ({ seat: p.seat, userId: p.userId, isBot: p.isBot, botLevel: p.botLevel })),
       });

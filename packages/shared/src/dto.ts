@@ -46,3 +46,14 @@ export type MatchmakingStatus =
 
 /** Нормализация кода комнаты: регистр и пробелы не важны. */
 export const normalizeRoomCode = (code: string) => code.trim().toUpperCase();
+
+export const roomJoinEventSchema = z.object({ code: z.string().min(1).max(12) });
+export const matchJoinEventSchema = z.object({ matchId: z.string() });
+export const matchResyncSchema = z.object({ matchId: z.string(), sinceVersion: z.number().int().nonnegative().optional() });
+export const chatSendSchema = z.object({
+  scope: z.enum(['ROOM', 'MATCH']),
+  /** Код комнаты (ROOM) или id партии (MATCH). */
+  target: z.string(),
+  body: z.string().trim().min(1, 'Пустое сообщение').max(500, 'Слишком длинное сообщение'),
+});
+export type ChatSendDto = z.infer<typeof chatSendSchema>;

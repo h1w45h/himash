@@ -26,6 +26,7 @@
     "@nestjs/throttler": "^6.2.1",
     "@nestjs/websockets": "^10.4.4",
     "@prisma/client": "^6.0.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "ioredis": "^5.4.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -40,6 +41,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^20.16.10",
     "prisma": "^6.0.0",
+    "socket.io-client": "^4.8.4",
     "typescript": "~5.3.3",
     "unplugin-swc": "^2.0.0",
     "vitest": "^2.1.2"
