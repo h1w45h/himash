@@ -268,4 +268,24 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     const row = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
     expect((row.state as { rng: number }).rng).toBeTypeOf('number');
   });
+
+  it('Покер по сети: карманные карты видны только владельцу, ход и сброс обрабатываются', async () => {
+    const [a, b] = [await mkUser('pk1'), await mkUser('pk2')];
+    const matchId = await startMatch(a.id, b.id, 'poker');
+    const [sa, sb] = [await connect(a.token), await connect(b.token)];
+    const va = await emit<MatchSnapshot>(sa, 'match:resync', { matchId });
+    const vb = await emit<MatchSnapshot>(sb, 'match:resync', { matchId });
+    if (!va.ok || !vb.ok) throw new Error('resync');
+    const holeA = (va.data.view as { hole: number[] }).hole;
+    const holeB = (vb.data.view as { hole: number[] }).hole;
+    expect(holeA).toHaveLength(2);
+    expect(holeB).toHaveLength(2);
+    expect(JSON.stringify(va.data.view)).not.toContain(`"hole":${JSON.stringify(holeB)}`);
+    // первым ходит малый блайнд (кнопка) — он сбрасывает, сервер раздаёт следующую руку
+    const first = va.data.currentSeats[0] === 0 ? { s: sa, snap: va.data } : { s: sb, snap: vb.data };
+    const upd = once<MatchUpdate>(sa, 'match:update');
+    expect(await emit(first.s, 'match:action', { matchId, expectedVersion: 0, action: { t: 'fold' } })).toMatchObject({ ok: true });
+    const u = await upd;
+    expect((u.view as { handNo: number }).handNo).toBe(2);
+  });
 });

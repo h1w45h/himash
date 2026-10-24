@@ -23,6 +23,7 @@ const REASONS: Record<string, string> = {
   netWorth: 'лимит раундов — по состоянию',
   monopoly: 'соперники обанкротились',
   uno: 'все карты сыграны',
+  allchips: 'все фишки собраны',
   stalemate: 'пат — ничья',
   insufficient: 'недостаточно материала — ничья',
   repetition: 'троекратное повторение — ничья',

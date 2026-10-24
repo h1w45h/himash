@@ -3,6 +3,7 @@ import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
 import { DurakTable } from './durak/DurakTable';
 import { MonopolyTable } from './monopoly/MonopolyTable';
+import { PokerTable } from './poker/PokerTable';
 import { UnoTable } from './uno/UnoTable';
 
 /** Свойства, которые получает интерфейс любой игры. */
@@ -30,4 +31,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   durak: DurakTable,
   monopoly: MonopolyTable,
   uno: UnoTable,
+  poker: PokerTable,
 };

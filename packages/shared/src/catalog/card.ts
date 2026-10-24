@@ -33,9 +33,9 @@ export const cardGames: CatalogGame[] = [
     tagline: 'Блеф, математика и нервы',
     description: 'Техасский Холдем без лимита (No-Limit) за столом до 9 игроков на игровые фишки.',
     category: 'CARD', minPlayers: 2, maxPlayers: 9, avgMinutes: 30, complexity: 3,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'BETA', hiddenInfo: true,
     rulesMarkdown: `## Цель
-Выиграть банк лучшей комбинацией из пяти карт или заставить всех соперников сбросить карты.
+Выиграть банк лучшей комбинацией из пяти карт или заставить всех соперников сбросить карты. Формат «сит-энд-го»: у всех по 1000 фишек, блайнды растут каждые 8 раздач, играем до последнего оставшегося игрока.
 
 ## Раздача
 Каждому игроку по 2 закрытые карты. На стол выкладываются 5 общих: **флоп** (3), **тёрн** (1), **ривер** (1). Перед флопом, после флопа, тёрна и ривера идёт круг торгов.
