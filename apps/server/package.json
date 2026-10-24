@@ -9,7 +9,8 @@
     "test": "vitest run --passWithNoTests",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "node -r @swc-node/register prisma/seed.ts"
+    "prisma:seed": "node -r @swc-node/register prisma/seed.ts",
+    "prisma:deploy": "prisma migrate deploy"
   },
   "prisma": {
     "seed": "node -r @swc-node/register prisma/seed.ts"

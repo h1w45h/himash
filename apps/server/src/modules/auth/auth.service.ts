@@ -26,6 +26,7 @@ export class AuthService {
    * Используется и HTTP-гвардом, и Socket.io-мидлваром.
    */
   async authenticate(token: string): Promise<User> {
+    if (token.startsWith('dev:')) return this.authenticateDev(token.slice(4));
     let clerkId: string;
     try {
       const payload = await verifyToken(token, {
@@ -40,6 +41,40 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { clerkId } });
     if (user) return this.assertActive(user);
     return this.assertActive(await this.provision(clerkId));
+  }
+
+  /**
+   * Локальный режим без Clerk: токен `dev:<ник>`. Включён при DEV_AUTH=true либо когда не задан CLERK_SECRET_KEY
+   * вне production. В production без явного DEV_AUTH=true токены такого вида отвергаются.
+   */
+  static devAuthEnabled(): boolean {
+    if (process.env.DEV_AUTH === 'true') return true;
+    if (process.env.DEV_AUTH === 'false') return false;
+    return !process.env.CLERK_SECRET_KEY && process.env.NODE_ENV !== 'production';
+  }
+
+  private async authenticateDev(nick: string): Promise<User> {
+    if (!AuthService.devAuthEnabled()) throw new UnauthorizedException('Сессия недействительна. Войдите заново.');
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(nick)) throw new UnauthorizedException('Ник: 3–16 латинских букв, цифр или «_».');
+    const clerkId = `dev_${nick.toLowerCase()}`;
+    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    if (user) return this.assertActive(user);
+    try {
+      return await this.prisma.user.create({
+        data: {
+          clerkId,
+          username: nick.toLowerCase(),
+          displayName: nick,
+          settings: { create: {} },
+          wallet: { create: { coins: 500 } },
+        },
+      });
+    } catch (e: unknown) {
+      if ((e as { code?: string }).code !== 'P2002') throw e;
+      const existing = await this.prisma.user.findUnique({ where: { clerkId } });
+      if (existing) return existing;
+      throw new UnauthorizedException('Ник уже занят.');
+    }
   }
 
   private assertActive(user: User): User {

@@ -5,8 +5,9 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Platform, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DEV_AUTH, useDevStore } from '@/auth/session';
 import { authErrorMessage } from '@/auth/errors';
-import { Button, ErrorText } from '@/components/ui';
+import { Button, ErrorText, Field } from '@/components/ui';
 import { ru } from '@/i18n/ru';
 import { useTheme } from '@/theme/useTheme';
 
@@ -15,7 +16,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 type Strategy = 'oauth_google' | 'oauth_apple' | 'oauth_custom_vk';
 
-export default function Welcome() {
+function ClerkWelcome() {
   const { colors } = useTheme();
   const router = useRouter();
   const { startSSOFlow } = useSSO();
@@ -63,4 +64,38 @@ export default function Welcome() {
       </View>
     </SafeAreaView>
   );
+}
+
+/** Локальный вход без Clerk: достаточно придумать ник. Аккаунт создаётся на сервере при первом запросе. */
+function DevWelcome() {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const signIn = useDevStore((s) => s.signIn);
+  const [nick, setNick] = useState('');
+  const valid = /^[A-Za-z0-9_]{3,16}$/.test(nick);
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 24, justifyContent: 'space-between' }}>
+      <View style={{ marginTop: 80, gap: 8 }}>
+        <Text style={{ color: colors.text, fontSize: 36, fontWeight: '800' }}>{ru.appName}</Text>
+        <Text style={{ color: colors.textMuted, fontSize: 17 }}>
+          Локальный режим: войдите по нику. Чтобы подключить Google, Apple, VK и email, задайте ключ Clerk (см. docs/AUTH.md).
+        </Text>
+      </View>
+      <View style={{ gap: 12 }}>
+        <Field label="Ник (латиница, цифры, _)" value={nick} onChangeText={setNick} autoCapitalize="none" autoCorrect={false} maxLength={16} />
+        <Button
+          title="Играть"
+          disabled={!valid}
+          onPress={async () => {
+            await signIn(nick);
+            router.replace('/');
+          }}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+export default function Welcome() {
+  return DEV_AUTH ? <DevWelcome /> : <ClerkWelcome />;
 }

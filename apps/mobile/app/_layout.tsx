@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@/auth/session';
 import { registerBuiltinGames } from '@nastolki/game-engine';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Slot, useRouter, useSegments } from 'expo-router';

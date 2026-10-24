@@ -6,23 +6,27 @@ React Native + Expo + TypeScript · NestJS · PostgreSQL + Prisma · Redis · So
 Документация: [архитектура](docs/ARCHITECTURE.md) · [экраны](docs/SCREENS.md) · [реал-тайм протокол](docs/REALTIME.md) ·
 [авторизация](docs/AUTH.md) · [добавление игр](docs/GAMES.md) · [план](docs/ROADMAP.md).
 
-## Быстрый старт
+## Быстрый старт (работает без аккаунтов и ключей)
 
-Нужны: Node 20+, Docker (или локальные Postgres 16 и Redis 7), аккаунт Clerk ([настройка](docs/AUTH.md)).
+Нужны: Node 20+, Docker (или локальные Postgres 16 и Redis 7).
 
 ```bash
-npm install
-docker run -d --name pg    -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nastolki postgres:16
-docker run -d --name redis -p 6379:6379 redis:7
-
-cp apps/server/.env.example apps/server/.env      # DATABASE_URL, REDIS_URL, ключи Clerk
-cp apps/mobile/.env.example apps/mobile/.env      # EXPO_PUBLIC_API_URL, EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
-npx prisma migrate deploy --schema apps/server/prisma/schema.prisma
-npm run prisma:seed -w @nastolki/server           # каталог игр
-
-npm run dev:server                                # http://localhost:3000/health
-npm run dev:mobile                                # Expo; для Apple Sign-In, MMKV и push нужна dev-сборка (eas build --profile development)
+npm run db:up                  # Postgres + Redis (docker compose)
+npm run setup                  # зависимости, .env, миграции, каталог игр
+npm run dev:server             # http://localhost:3000/health
+npm run dev:mobile             # Expo (QR-код / эмулятор)
 ```
+
+Без ключа Clerk приложение работает в **локальном режиме**: на экране входа достаточно придумать ник,
+сервер принимает токен `dev:<ник>` (в production без `DEV_AUTH=true` отключено).
+В `apps/mobile/.env` укажите `EXPO_PUBLIC_API_URL`: для телефона — IP компьютера в сети, для Android-эмулятора — `http://10.0.2.2:3000`.
+Чтобы подключить Google / Apple / VK / email, задайте ключи Clerk ([настройка](docs/AUTH.md)).
+Для Apple Sign-In, MMKV и push нужна dev-сборка (`eas build --profile development`); в Expo Go работает всё остальное, кроме MMKV-сохранений.
+
+Проверить работающий сервер сквозным сценарием (вход → комната с ботом → ходы по Socket.io):
+`API=http://localhost:3000 node scripts/smoke.mjs`.
+
+Деплой сервера: `apps/server/Dockerfile` + `railway.json` (Railway: подключите Postgres и Redis, задайте `DATABASE_URL`, `REDIS_URL`, ключи Clerk).
 
 ## Проверки
 

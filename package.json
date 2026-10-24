@@ -13,7 +13,9 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "setup": "sh scripts/setup.sh",
+    "db:up": "docker compose up -d"
   },
   "devDependencies": {
     "prettier": "^3.3.3",

@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@/auth/session';
 import { useEffect } from 'react';
 import { useMe } from '@/api/users';
 import { useSettings } from '@/stores/settings';
