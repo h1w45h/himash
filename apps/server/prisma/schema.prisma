@@ -1,0 +1,734 @@
+// Схема БД «Настолки Онлайн». PostgreSQL + Prisma.
+// Принципы:
+//  - Состояние партии = снапшот (Match.state, JSON) + журнал ходов (MatchMove) → воспроизведение, реконнект, анти-чит.
+//  - Рейтинг хранится отдельно для каждой игры (Rating), а не один на пользователя.
+//  - Валюта ведётся леджером (WalletTransaction), баланс — денормализованный кэш в Wallet.
+//  - Идентификация через Clerk: User.clerkId — внешний ключ в провайдера (email/Google/Apple/VK).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────── Пользователи ─────────────────────────
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  APPLE
+  VK
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
+}
+
+model User {
+  id          String     @id @default(cuid())
+  clerkId     String     @unique
+  username    String     @unique @db.VarChar(24)
+  displayName String     @db.VarChar(48)
+  email       String?    @unique
+  avatarUrl   String?
+  avatarId    String? // выбранный косметический аватар из магазина
+  bio         String?    @db.VarChar(280)
+  country     String?    @db.VarChar(2)
+  locale      String     @default("ru")
+  status      UserStatus @default(ACTIVE)
+  bannedUntil DateTime?
+  lastSeenAt  DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  providers AuthProviderLink[]
+  settings  UserSettings?
+  devices   Device[]
+  wallet    Wallet?
+
+  ratings      Rating[]
+  achievements UserAchievement[]
+  inventory    InventoryItem[]
+  purchases    Purchase[]
+
+  friendshipsSent     Friendship[] @relation("FriendshipRequester")
+  friendshipsReceived Friendship[] @relation("FriendshipAddressee")
+  blocksMade          Block[]      @relation("BlockBlocker")
+  blocksReceived      Block[]      @relation("BlockBlocked")
+
+  hostedRooms     Room[]
+  roomPlayers     RoomPlayer[]
+  matchPlayers    MatchPlayer[]
+  messages        ChatMessage[]
+  invitesSent     Invitation[]   @relation("InviteSender")
+  invitesReceived Invitation[]   @relation("InviteReceiver")
+  notifications   Notification[]
+
+  tournamentsCreated      Tournament[]
+  tournamentParticipation TournamentParticipant[]
+
+  reportsMade     Report[] @relation("ReportAuthor")
+  reportsReceived Report[] @relation("ReportTarget")
+
+  @@index([lastSeenAt])
+  @@index([status])
+}
+
+// Привязанные способы входа (Clerk может склеить несколько в один аккаунт).
+model AuthProviderLink {
+  id         String       @id @default(cuid())
+  userId     String
+  provider   AuthProvider
+  externalId String
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalId])
+  @@index([userId])
+}
+
+enum ThemePreference {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
+model UserSettings {
+  userId           String          @id
+  theme            ThemePreference @default(SYSTEM)
+  soundEnabled     Boolean         @default(true)
+  hapticsEnabled   Boolean         @default(true)
+  pushEnabled      Boolean         @default(true)
+  pushFriendInvite Boolean         @default(true)
+  pushYourTurn     Boolean         @default(true)
+  pushTournament   Boolean         @default(true)
+  allowInvitesFrom InviteScope     @default(FRIENDS)
+  showOnlineStatus Boolean         @default(true)
+  activeBoardTheme String? // id ShopItem
+  activeCardBack   String? // id ShopItem
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum InviteScope {
+  EVERYONE
+  FRIENDS
+  NOBODY
+}
+
+enum Platform {
+  IOS
+  ANDROID
+}
+
+model Device {
+  id        String   @id @default(cuid())
+  userId    String
+  platform  Platform
+  pushToken String   @unique // Expo push token
+  lastUsed  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ───────────────────────── Социальный граф ─────────────────────────
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model Friendship {
+  id          String           @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  respondedAt DateTime?
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  // Пара уникальна в одном направлении; обратное направление запрещается на уровне сервиса.
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("BlockBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("BlockBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+}
+
+// ───────────────────────── Каталог игр ─────────────────────────
+
+enum GameCategory {
+  CLASSIC // Шахматы, Шашки, Нарды, Го
+  CARD // Дурак, Покер, Преферанс, Uno, Свинтус
+  STRATEGY // Монополия, Catan, Каркассон, TtR, Азул, Манчкин
+  PARTY // Мафия, Бункер, Кодовые имена, Элиас, Диксит, Имаджинариум
+}
+
+enum GameImplStatus {
+  PLANNED
+  BETA
+  RELEASED
+}
+
+// Метаданные игры. Логика — в пакете @nastolki/game-engine, ключ связи = slug.
+model Game {
+  id             String         @id @default(cuid())
+  slug           String         @unique // 'chess', 'durak', 'monopoly'
+  title          String // «Шахматы»
+  tagline        String
+  description    String
+  rulesMarkdown  String // полные правила на русском
+  category       GameCategory
+  minPlayers     Int
+  maxPlayers     Int
+  avgMinutes     Int
+  complexity     Int            @default(1) // 1..5
+  coverUrl       String?
+  iconUrl        String?
+  hasBots        Boolean        @default(false)
+  supportsLocal  Boolean        @default(true)
+  supportsOnline Boolean        @default(true)
+  isRated        Boolean        @default(true) // участвует ли в рейтинге
+  variants       Json? // варианты правил: [{ key:'podkidnoy', title:'Подкидной' }, ...]
+  status         GameImplStatus @default(PLANNED)
+  sortOrder      Int            @default(0)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  rooms        Room[]
+  matches      Match[]
+  ratings      Rating[]
+  tournaments  Tournament[]
+  achievements Achievement[]
+
+  @@index([category, sortOrder])
+}
+
+// ───────────────────────── Комнаты и матчи ─────────────────────────
+
+enum RoomVisibility {
+  PUBLIC
+  PRIVATE // только по коду
+  FRIENDS
+}
+
+enum RoomStatus {
+  WAITING
+  STARTING
+  IN_PROGRESS
+  FINISHED
+  CLOSED
+}
+
+enum GameMode {
+  ONLINE
+  LOCAL // pass-and-play, сервером не ведётся, только синхронизация статистики
+  BOT
+  TOURNAMENT
+}
+
+model Room {
+  id                String         @id @default(cuid())
+  code              String         @unique @db.VarChar(6) // 6 символов без похожих (0/O, 1/I)
+  gameId            String
+  hostId            String
+  visibility        RoomVisibility @default(PUBLIC)
+  status            RoomStatus     @default(WAITING)
+  mode              GameMode       @default(ONLINE)
+  passwordHash      String?
+  maxPlayers        Int
+  minPlayers        Int
+  isRated           Boolean        @default(true)
+  turnTimeSec       Int? // лимит на ход
+  variantKey        String? // вариант правил
+  options           Json? // доп. настройки (начальный капитал, таймер и т.д.)
+  tournamentMatchId String?        @unique
+  createdAt         DateTime       @default(now())
+  startedAt         DateTime?
+  closedAt          DateTime?
+
+  game            Game             @relation(fields: [gameId], references: [id])
+  host            User             @relation(fields: [hostId], references: [id])
+  players         RoomPlayer[]
+  match           Match?
+  messages        ChatMessage[]
+  invitations     Invitation[]
+  tournamentMatch TournamentMatch? @relation(fields: [tournamentMatchId], references: [id])
+
+  @@index([gameId, status, visibility])
+  @@index([hostId])
+}
+
+model RoomPlayer {
+  id       String    @id @default(cuid())
+  roomId   String
+  userId   String? // null → бот
+  isBot    Boolean   @default(false)
+  botLevel BotLevel?
+  seat     Int
+  isReady  Boolean   @default(false)
+  joinedAt DateTime  @default(now())
+
+  room Room  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, seat])
+  @@unique([roomId, userId])
+}
+
+enum BotLevel {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum MatchStatus {
+  IN_PROGRESS
+  FINISHED
+  ABANDONED
+  CANCELLED
+}
+
+enum MatchResult {
+  WIN
+  LOSS
+  DRAW
+  LEFT // вышел/техническое поражение
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  roomId       String?     @unique // null для локальных/ботовых партий, синхронизированных с клиента
+  gameId       String
+  mode         GameMode
+  variantKey   String?
+  status       MatchStatus @default(IN_PROGRESS)
+  isRated      Boolean     @default(true)
+  seed         String // детерминированный сид (перемешивание колод, кубики)
+  state        Json // актуальный снапшот состояния игры (серверная версия)
+  stateVersion Int         @default(0) // = номер последнего хода; оптимистичная блокировка
+  currentSeat  Int?
+  turnDeadline DateTime?
+  winnerSeats  Int[]
+  startedAt    DateTime    @default(now())
+  finishedAt   DateTime?
+
+  room            Room?            @relation(fields: [roomId], references: [id])
+  game            Game             @relation(fields: [gameId], references: [id])
+  players         MatchPlayer[]
+  moves           MatchMove[]
+  messages        ChatMessage[]
+  tournamentMatch TournamentMatch?
+
+  @@index([gameId, finishedAt])
+  @@index([status, turnDeadline]) // воркер таймаутов ходов
+}
+
+model MatchPlayer {
+  id           String       @id @default(cuid())
+  matchId      String
+  userId       String?
+  isBot        Boolean      @default(false)
+  botLevel     BotLevel?
+  seat         Int
+  result       MatchResult?
+  score        Int?
+  ratingBefore Int?
+  ratingAfter  Int?
+  ratingDelta  Int?
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id])
+
+  @@unique([matchId, seat])
+  @@index([userId, matchId])
+}
+
+// Журнал ходов — источник истины для реплея и аудита.
+model MatchMove {
+  id        BigInt    @id @default(autoincrement())
+  matchId   String
+  index     Int // порядковый номер хода, с 1
+  seat      Int
+  action    Json // { type: 'MOVE', from:'e2', to:'e4' }
+  clientTs  DateTime?
+  createdAt DateTime  @default(now())
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, index])
+}
+
+// ───────────────────────── Рейтинг и достижения ─────────────────────────
+
+// Рейтинг Glicko-2 по каждой игре отдельно.
+model Rating {
+  id         String   @id @default(cuid())
+  userId     String
+  gameId     String
+  rating     Int      @default(1200)
+  deviation  Float    @default(350)
+  volatility Float    @default(0.06)
+  wins       Int      @default(0)
+  losses     Int      @default(0)
+  draws      Int      @default(0)
+  peak       Int      @default(1200)
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@unique([userId, gameId])
+  @@index([gameId, rating(sort: Desc)]) // лидерборды
+}
+
+enum AchievementRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+model Achievement {
+  id          String            @id @default(cuid())
+  key         String            @unique // 'chess_first_win'
+  title       String
+  description String
+  iconUrl     String?
+  rarity      AchievementRarity @default(COMMON)
+  gameId      String? // null → общее достижение
+  target      Int               @default(1) // порог прогресса
+  rewardCoins Int               @default(0)
+  hidden      Boolean           @default(false)
+
+  game  Game?             @relation(fields: [gameId], references: [id])
+  users UserAchievement[]
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  progress      Int       @default(0)
+  unlockedAt    DateTime?
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@id([userId, achievementId])
+}
+
+// ───────────────────────── Чат и приглашения ─────────────────────────
+
+enum ChatScope {
+  ROOM
+  MATCH
+  DIRECT
+  TOURNAMENT
+}
+
+enum MessageKind {
+  TEXT
+  EMOJI
+  SYSTEM
+}
+
+model ChatMessage {
+  id           String      @id @default(cuid())
+  scope        ChatScope
+  senderId     String? // null для SYSTEM
+  roomId       String?
+  matchId      String?
+  recipientId  String? // для DIRECT
+  tournamentId String?
+  kind         MessageKind @default(TEXT)
+  body         String      @db.VarChar(1000)
+  readAt       DateTime?
+  createdAt    DateTime    @default(now())
+
+  sender     User?       @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  room       Room?       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  match      Match?      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@index([matchId, createdAt])
+  @@index([senderId, recipientId, createdAt])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model Invitation {
+  id         String           @id @default(cuid())
+  roomId     String
+  senderId   String
+  receiverId String
+  status     InvitationStatus @default(PENDING)
+  expiresAt  DateTime
+  createdAt  DateTime         @default(now())
+
+  room     Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender   User @relation("InviteSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("InviteReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId, status])
+}
+
+// ───────────────────────── Турниры ─────────────────────────
+
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+  SWISS
+}
+
+enum TournamentStatus {
+  REGISTRATION
+  IN_PROGRESS
+  FINISHED
+  CANCELLED
+}
+
+model Tournament {
+  id          String           @id @default(cuid())
+  gameId      String
+  creatorId   String
+  title       String
+  description String?
+  format      TournamentFormat @default(SINGLE_ELIMINATION)
+  status      TournamentStatus @default(REGISTRATION)
+  isPrivate   Boolean          @default(false)
+  joinCode    String?          @unique @db.VarChar(6)
+  maxPlayers  Int
+  minPlayers  Int              @default(4)
+  entryFee    Int              @default(0) // в монетах
+  prizePool   Json? // [{ place:1, coins:500, itemId:null }, ...]
+  startsAt    DateTime
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime         @default(now())
+
+  game         Game                    @relation(fields: [gameId], references: [id])
+  creator      User                    @relation(fields: [creatorId], references: [id])
+  participants TournamentParticipant[]
+  matches      TournamentMatch[]
+  messages     ChatMessage[]
+
+  @@index([status, startsAt])
+}
+
+model TournamentParticipant {
+  tournamentId String
+  userId       String
+  seed         Int?
+  score        Float    @default(0) // очки (швейцарка / круговая)
+  placement    Int?
+  eliminated   Boolean  @default(false)
+  joinedAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([tournamentId, userId])
+}
+
+model TournamentMatch {
+  id           String    @id @default(cuid())
+  tournamentId String
+  round        Int
+  position     Int // позиция в сетке
+  playerIds    String[]
+  winnerId     String?
+  matchId      String?   @unique
+  nextMatchId  String? // куда идёт победитель
+  scheduledAt  DateTime?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  match      Match?     @relation(fields: [matchId], references: [id])
+  room       Room?
+
+  @@unique([tournamentId, round, position])
+}
+
+// ───────────────────────── Экономика и магазин ─────────────────────────
+
+enum ShopItemType {
+  AVATAR
+  BOARD_THEME
+  PIECE_SET
+  CARD_BACK
+  EMOTE
+  APP_THEME
+  BUNDLE
+}
+
+enum Currency {
+  COINS // игровая, зарабатывается
+  GEMS // премиум, покупается за деньги через IAP
+}
+
+model ShopItem {
+  id            String            @id @default(cuid())
+  sku           String            @unique
+  type          ShopItemType
+  title         String
+  description   String?
+  previewUrl    String?
+  assetKey      String // ключ ассета/темы на клиенте
+  gameSlug      String? // применимость к конкретной игре
+  currency      Currency
+  price         Int
+  rarity        AchievementRarity @default(COMMON)
+  isActive      Boolean           @default(true)
+  availableFrom DateTime?
+  availableTo   DateTime?
+  createdAt     DateTime          @default(now())
+
+  inventory InventoryItem[]
+  purchases Purchase[]
+
+  @@index([type, isActive])
+}
+
+model InventoryItem {
+  userId     String
+  itemId     String
+  acquiredAt DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item ShopItem @relation(fields: [itemId], references: [id])
+
+  @@id([userId, itemId])
+}
+
+model Purchase {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  currency  Currency
+  price     Int
+  createdAt DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id])
+  item ShopItem @relation(fields: [itemId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model Wallet {
+  userId String @id
+  coins  Int    @default(0)
+  gems   Int    @default(0)
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+}
+
+enum TransactionReason {
+  MATCH_REWARD
+  ACHIEVEMENT
+  DAILY_BONUS
+  TOURNAMENT_FEE
+  TOURNAMENT_PRIZE
+  SHOP_PURCHASE
+  IAP
+  ADMIN
+}
+
+model WalletTransaction {
+  id             String            @id @default(cuid())
+  userId         String
+  currency       Currency
+  amount         Int // + начисление, − списание
+  reason         TransactionReason
+  refId          String? // id матча/покупки/турнира
+  idempotencyKey String?           @unique // защита от двойного начисления / повторной IAP
+  createdAt      DateTime          @default(now())
+
+  wallet Wallet @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// ───────────────────────── Уведомления и модерация ─────────────────────────
+
+enum NotificationType {
+  FRIEND_REQUEST
+  FRIEND_ACCEPTED
+  ROOM_INVITE
+  YOUR_TURN
+  TOURNAMENT_START
+  ACHIEVEMENT
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+}
+
+enum ReportReason {
+  CHEATING
+  ABUSE
+  SPAM
+  INAPPROPRIATE_NAME
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+}
+
+model Report {
+  id        String       @id @default(cuid())
+  authorId  String
+  targetId  String
+  matchId   String?
+  reason    ReportReason
+  comment   String?      @db.VarChar(500)
+  status    ReportStatus @default(OPEN)
+  createdAt DateTime     @default(now())
+
+  author User @relation("ReportAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  target User @relation("ReportTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
