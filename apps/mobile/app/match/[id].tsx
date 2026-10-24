@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMe } from '@/api/users';
@@ -8,6 +8,7 @@ import { Button, ErrorText } from '@/components/ui';
 import { GAME_UIS } from '@/games/registry';
 import { GenericBoard } from '@/games/GenericBoard';
 import { reasonText } from '@/games/meta';
+import { feedback } from '@/services/feedback';
 import { useCountdown, useMatch } from '@/realtime/useMatch';
 import { radius } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
@@ -20,6 +21,17 @@ export default function MatchScreen() {
   const { snap, error, pending, connected, myTurn, sendAction, resign } = useMatch(id);
   const left = useCountdown(snap?.turnDeadline ?? null);
   const [chat, setChat] = useState(false);
+
+  // Звук: «ваш ход» и итог партии
+  useEffect(() => {
+    if (myTurn) feedback.notify();
+  }, [myTurn]);
+  const finishedStatus = snap?.status !== 'IN_PROGRESS' ? snap?.status : null;
+  useEffect(() => {
+    if (!snap || !finishedStatus) return;
+    (snap.seat !== null && snap.outcome?.winners.includes(snap.seat) ? feedback.win : feedback.lose)();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finishedStatus]);
 
   if (!snap) {
     return (

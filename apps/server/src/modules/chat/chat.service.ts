@@ -1,3 +1,4 @@
+import { maskProfanity } from '../../common/profanity';
 import { Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { getGameOrNull } from '@nastolki/game-engine';
@@ -60,8 +61,10 @@ export class ChatService {
     if (count > RATE_LIMIT) throw new RealtimeError('RATE_LIMIT', 'Слишком часто. Подождите немного.');
 
     const t = await this.resolve(userId, dto.scope, dto.target, true);
+    // Нецензурные слова маскируются до сохранения: их не видят ни собеседники, ни история
+    const body = maskProfanity(dto.body);
     const row = await this.prisma.chatMessage.create({
-      data: { scope: dto.scope, senderId: userId, roomId: t.roomId, matchId: t.matchId, recipientId: t.recipientId, body: dto.body },
+      data: { scope: dto.scope, senderId: userId, roomId: t.roomId, matchId: t.matchId, recipientId: t.recipientId, body },
       include: { sender: { select: userBrief } },
     });
     const message = this.toDto(row);
@@ -69,7 +72,7 @@ export class ChatService {
     if (t.recipientId) {
       // Офлайн-получатель узнает о сообщении из push.
       await this.notifications.pushOnly(t.recipientId, {
-        type: 'SYSTEM', title: row.sender?.displayName ?? 'Новое сообщение', body: dto.body.slice(0, 120), data: { userId, kind: 'dm' },
+        type: 'SYSTEM', title: row.sender?.displayName ?? 'Новое сообщение', body: body.slice(0, 120), data: { userId, kind: 'dm' },
       });
     }
     return message;
