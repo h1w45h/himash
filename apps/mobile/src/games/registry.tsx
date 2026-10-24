@@ -13,6 +13,7 @@ import { DurakTable } from './durak/DurakTable';
 import { GoBoard } from './go/GoBoard';
 import { MafiaTable } from './mafia/MafiaTable';
 import { MonopolyTable } from './monopoly/MonopolyTable';
+import { MunchkinTable } from './munchkin/MunchkinTable';
 import { PokerTable } from './poker/PokerTable';
 import { PreferansTable } from './preferans/PreferansTable';
 import { SvintusTable } from './svintus/SvintusTable';
@@ -59,4 +60,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   catan: CatanBoard,
   carcassonne: CarcassonneBoard,
   preferans: PreferansTable,
+  munchkin: MunchkinTable,
 };
