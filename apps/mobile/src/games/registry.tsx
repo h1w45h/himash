@@ -14,6 +14,7 @@ import { GoBoard } from './go/GoBoard';
 import { MafiaTable } from './mafia/MafiaTable';
 import { MonopolyTable } from './monopoly/MonopolyTable';
 import { PokerTable } from './poker/PokerTable';
+import { PreferansTable } from './preferans/PreferansTable';
 import { SvintusTable } from './svintus/SvintusTable';
 import { TtrBoard } from './ttr/TtrBoard';
 import { UnoTable } from './uno/UnoTable';
@@ -57,4 +58,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   'ticket-to-ride': TtrBoard,
   catan: CatanBoard,
   carcassonne: CarcassonneBoard,
+  preferans: PreferansTable,
 };
