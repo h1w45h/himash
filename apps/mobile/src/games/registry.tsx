@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { AliasTable } from './alias/AliasTable';
 import { BackgammonBoard } from './backgammon/BackgammonBoard';
+import { BunkerTable } from './bunker/BunkerTable';
 import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
 import { CodenamesBoard } from './codenames/CodenamesBoard';
@@ -44,4 +45,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   mafia: MafiaTable,
   codenames: CodenamesBoard,
   alias: AliasTable,
+  bunker: BunkerTable,
 };
