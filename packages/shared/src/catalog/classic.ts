@@ -7,7 +7,7 @@ export const classicGames: CatalogGame[] = [
     tagline: 'Королевская игра для двоих',
     description: 'Классические шахматы с рейтингом, часами и анализом партий.',
     category: 'CLASSIC', minPlayers: 2, maxPlayers: 2, avgMinutes: 20, complexity: 4,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'BETA',
     rulesMarkdown: `## Цель
 Поставить мат королю соперника — атаковать его так, чтобы он не мог избежать взятия.
 

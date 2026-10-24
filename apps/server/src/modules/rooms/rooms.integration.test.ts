@@ -10,7 +10,7 @@ import { RoomsService } from './rooms.service';
 /** Интеграционный тест: нужен Postgres с применёнными миграциями и seed, плюс Redis. */
 const enabled = !!process.env.DATABASE_URL && !!process.env.REDIS_URL;
 
-import { countingGame } from '../../testing/counting-game';
+import { countingGame, countingGameRow } from '../../testing/counting-game';
 
 const dummy = countingGame;
 
@@ -35,6 +35,7 @@ describe.skipIf(!enabled)('комнаты и матчмейкинг (интег�
     const app = mod.createNestApplication();
     await app.init();
     prisma = app.get(PrismaService);
+    await prisma.game.upsert({ where: { slug: countingGameRow.slug }, create: countingGameRow, update: countingGameRow });
     rooms = app.get(RoomsService);
     mm = app.get(MatchmakingService);
     close = () => app.close();
@@ -44,15 +45,16 @@ describe.skipIf(!enabled)('комнаты и матчмейкинг (интег�
     await prisma.match.deleteMany({ where: { players: { some: { userId: { in: ids } } } } });
     await prisma.room.deleteMany({ where: { hostId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    await prisma.game.deleteMany({ where: { slug: countingGameRow.slug } });
     await close();
   });
 
   it('создание, вход по коду, готовность, старт', async () => {
     const [a, b, c] = [await mkUser('anna'), await mkUser('boris'), await mkUser('clara')];
-    const room = await rooms.create(a, { gameSlug: 'chess', maxPlayers: 2, visibility: 'PUBLIC', isRated: true });
+    const room = await rooms.create(a, { gameSlug: 'test-counting', maxPlayers: 2, visibility: 'PUBLIC', isRated: true });
     expect(room.code).toMatch(/^[A-Z2-9]{6}$/);
 
-    expect((await rooms.listPublic('chess')).some((r) => r.code === room.code)).toBe(true);
+    expect((await rooms.listPublic('test-counting')).some((r) => r.code === room.code)).toBe(true);
 
     await expect(rooms.start(a, room.code)).rejects.toThrow('минимум');
     const joined = await rooms.join(b, room.code.toLowerCase());
@@ -72,7 +74,7 @@ describe.skipIf(!enabled)('комнаты и матчмейкинг (интег�
 
   it('пароль и передача прав хозяина', async () => {
     const [a, b] = [await mkUser('dina'), await mkUser('egor')];
-    const room = await rooms.create(a, { gameSlug: 'chess', maxPlayers: 2, visibility: 'PRIVATE', isRated: false, password: 'секрет' });
+    const room = await rooms.create(a, { gameSlug: 'test-counting', maxPlayers: 2, visibility: 'PRIVATE', isRated: false, password: 'секрет' });
     expect(room.hasPassword).toBe(true);
     await expect(rooms.join(b, room.code, 'не тот')).rejects.toThrow('пароль');
     await rooms.join(b, room.code, 'секрет');
@@ -83,9 +85,9 @@ describe.skipIf(!enabled)('комнаты и матчмейкинг (интег�
 
   it('матчмейкинг сводит двух игроков', async () => {
     const [a, b] = [await mkUser('fedor'), await mkUser('galina')];
-    await mm.join(a, { gameSlug: 'chess' });
+    await mm.join(a, { gameSlug: 'test-counting' });
     expect((await mm.status(a)).state).toBe('searching');
-    await mm.join(b, { gameSlug: 'chess' });
+    await mm.join(b, { gameSlug: 'test-counting' });
 
     let sa = await mm.status(a);
     for (let i = 0; i < 30 && sa.state !== 'found'; i++) {

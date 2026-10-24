@@ -3,11 +3,11 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { io, type Socket } from 'socket.io-client';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { registerGame } from '@nastolki/game-engine';
+import { chess, registerBuiltinGames, registerGame } from '@nastolki/game-engine';
 import type { Ack, MatchSnapshot, MatchUpdate } from '@nastolki/shared';
 import { AppModule } from '../../app.module';
 import { PrismaService } from '../../common/prisma.module';
-import { countingGame } from '../../testing/counting-game';
+import { countingGame, countingGameRow } from '../../testing/counting-game';
 import { AuthService } from '../auth/auth.service';
 import { RoomsService } from '../rooms/rooms.service';
 
@@ -42,14 +42,15 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     await once(s, 'connect');
     return s;
   };
-  const startMatch = async (a: string, b: string) => {
-    const room = await rooms.create(a, { gameSlug: 'chess', maxPlayers: 2, visibility: 'PRIVATE', isRated: true });
+  const startMatch = async (a: string, b: string, gameSlug = 'test-counting') => {
+    const room = await rooms.create(a, { gameSlug, maxPlayers: 2, visibility: 'PRIVATE', isRated: true });
     await rooms.join(b, room.code);
     await rooms.setReady(b, room.code, true);
     return (await rooms.start(a, room.code)).matchId as string;
   };
 
   beforeAll(async () => {
+    registerBuiltinGames();
     try { registerGame(countingGame); } catch { /* уже есть */ }
     const mod = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(AuthService)
@@ -62,6 +63,7 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     await app.listen(0);
     url = await app.getUrl().then((u) => u.replace('[::1]', 'localhost'));
     prisma = app.get(PrismaService);
+    await prisma.game.upsert({ where: { slug: countingGameRow.slug }, create: countingGameRow, update: countingGameRow });
     rooms = app.get(RoomsService);
   });
 
@@ -73,6 +75,7 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     await prisma.room.deleteMany({ where: { hostId: { in: ids } } });
     await prisma.rating.deleteMany({ where: { userId: { in: ids } } });
     await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    await prisma.game.deleteMany({ where: { slug: countingGameRow.slug } });
     await app.close();
   });
 
@@ -179,7 +182,7 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
 
   it('бот делает ход сам', async () => {
     const a = await mkUser('lena');
-    const room = await rooms.create(a.id, { gameSlug: 'chess', maxPlayers: 2, visibility: 'PRIVATE', isRated: true });
+    const room = await rooms.create(a.id, { gameSlug: 'test-counting', maxPlayers: 2, visibility: 'PRIVATE', isRated: true });
     await rooms.addBot(a.id, room.code, 'EASY');
     const started = await rooms.start(a.id, room.code);
     expect(started.isRated).toBe(true); // настройка комнаты не меняется…
@@ -205,5 +208,27 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     await prisma.match.update({ where: { id: matchId }, data: { turnDeadline: new Date(Date.now() - 1000) } });
     const end = await once<MatchUpdate>(sb, 'match:ended', 5000);
     expect(end.outcome).toMatchObject({ winners: [1], reason: 'timeout' });
+  });
+
+  it('настоящие шахматы: мат Шолара по сокетам, скрытых данных нет', async () => {
+    const [a, b] = [await mkUser('shahmat1'), await mkUser('shahmat2')];
+    const matchId = await startMatch(a.id, b.id, 'chess');
+    const [sw, sbk] = [await connect(a.token), await connect(b.token)];
+    const first = await emit<MatchSnapshot>(sw, 'match:resync', { matchId });
+    await emit(sbk, 'match:resync', { matchId });
+    expect(first.ok && first.data.legal).toHaveLength(20);
+
+    const moves: [Socket, string, string][] = [
+      [sw, 'e2', 'e4'], [sbk, 'e7', 'e5'], [sw, 'f1', 'c4'], [sbk, 'b8', 'c6'],
+      [sw, 'd1', 'h5'], [sbk, 'g8', 'f6'], [sw, 'h5', 'f7'],
+    ];
+    const ended = once<MatchUpdate>(sbk, 'match:ended', 8000);
+    for (const [i, [sock, f, t]] of moves.entries()) {
+      const r = await emit(sock, 'match:action', { matchId, expectedVersion: i, action: { from: chess.parseSq(f), to: chess.parseSq(t) } });
+      expect(r).toMatchObject({ ok: true });
+    }
+    const end = await ended;
+    expect(end.outcome).toMatchObject({ winners: [0], reason: 'checkmate' });
+    expect((await prisma.rating.findFirstOrThrow({ where: { userId: a.id, game: { slug: 'chess' } } })).rating).toBeGreaterThan(1200);
   });
 });

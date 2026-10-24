@@ -5,16 +5,19 @@ const prisma = new PrismaClient();
 
 /**
  * Идемпотентный seed каталога: upsert по slug.
- * Поле status НЕ перезаписываем у существующих игр — его меняют релизы, а не seed.
+ * Статус повышаем до указанного в каталоге, если игра уже реализована (не PLANNED);
+ * вручную выставленный RELEASED не понижается.
  */
 async function main() {
   for (const [i, g] of CATALOG.entries()) {
     const { variants, status, ...rest } = g;
     const data = { ...rest, variants: variants as Prisma.InputJsonValue | undefined, sortOrder: i };
+    const existing = await prisma.game.findUnique({ where: { slug: g.slug }, select: { status: true } });
+    const keep = existing?.status === 'RELEASED' || (existing && status === 'PLANNED');
     await prisma.game.upsert({
       where: { slug: g.slug },
       create: { ...data, status },
-      update: data,
+      update: keep ? data : { ...data, status },
     });
   }
   console.log(`Каталог: загружено игр — ${CATALOG.length}`);

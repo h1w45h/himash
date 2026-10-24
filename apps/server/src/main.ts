@@ -1,9 +1,11 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
+import { registerBuiltinGames } from '@nastolki/game-engine';
 import { AppModule } from './app.module';
 import { RedisIoAdapter } from './modules/realtime/redis-io.adapter';
 
 async function bootstrap() {
+  registerBuiltinGames(); // движки игр нужны арбитру партий и матчмейкингу
   const app = await NestFactory.create(AppModule, {
     cors: true,
     rawBody: true, // нужен для проверки подписи вебхуков Clerk

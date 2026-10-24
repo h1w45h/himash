@@ -14,6 +14,8 @@ export function getGame(slug: string): AnyGame {
   return g;
 }
 
+export const getGameOrNull = (slug: string): AnyGame | null => games.get(slug) ?? null;
+
 export const listGames = (): AnyGame[] => [...games.values()];
 
 /** Есть ли реализация игры в движке (в каталоге игра может быть, а логики ещё нет). */

@@ -11,8 +11,15 @@ type Action = { add: 1 | 2 | 3 };
  * Тестовая игра «Счёт до 10»: игроки по очереди прибавляют 1–3,
  * кто довёл сумму до 10 и больше — победил. Нужна только для интеграционных тестов сервера.
  */
+/** Запись каталога для тестовой игры (в seed её нет). */
+export const countingGameRow = {
+  slug: 'test-counting', title: 'Счёт до 10', tagline: 'тест', description: 'тест', rulesMarkdown: 'тест',
+  category: 'CLASSIC' as const, minPlayers: 2, maxPlayers: 2, avgMinutes: 1, hasBots: true, isRated: true,
+  status: 'BETA' as const, sortOrder: 9999,
+};
+
 export const countingGame: GameDefinition<State, Action> = {
-  slug: 'chess', // подменяем slug реальной игры из каталога, чтобы работали комнаты и seed
+  slug: 'test-counting',
   minPlayers: 2,
   maxPlayers: 2,
   setup: () => ({ total: 0, turn: 0, winner: null }),
