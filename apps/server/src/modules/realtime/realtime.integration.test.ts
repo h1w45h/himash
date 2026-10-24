@@ -231,4 +231,41 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     expect(end.outcome).toMatchObject({ winners: [0], reason: 'checkmate' });
     expect((await prisma.rating.findFirstOrThrow({ where: { userId: a.id, game: { slug: 'chess' } } })).rating).toBeGreaterThan(1200);
   });
+
+  it('Дурак по сети: каждый видит только свою руку', async () => {
+    const [a, b] = [await mkUser('durak1'), await mkUser('durak2')];
+    const matchId = await startMatch(a.id, b.id, 'durak');
+    const [sa, sb] = [await connect(a.token), await connect(b.token)];
+    const va = await emit<MatchSnapshot>(sa, 'match:resync', { matchId });
+    const vb = await emit<MatchSnapshot>(sb, 'match:resync', { matchId });
+    if (!va.ok || !vb.ok) throw new Error('resync');
+    const viewA = va.data.view as { hand: { rank: number; suit: string }[]; handCounts: number[] };
+    const viewB = vb.data.view as { hand: { rank: number; suit: string }[]; handCounts: number[] };
+    expect(viewA.hand).toHaveLength(6);
+    expect(viewB.hand).toHaveLength(6);
+    expect(viewA.handCounts).toEqual([6, 6]);
+    const keys = (h: { rank: number; suit: string }[]) => h.map((c) => `${c.rank}${c.suit}`);
+    expect(keys(viewA.hand).some((k) => keys(viewB.hand).includes(k))).toBe(false);
+    // Ходит тот, у кого младший козырь (или первый). Он выкладывает любую карту из legal.
+    const first = va.data.currentSeats[0] === 0 ? { s: sa, snap: va.data } : { s: sb, snap: vb.data };
+    expect(first.snap.legal.length).toBeGreaterThan(0);
+    const r = await emit(first.s, 'match:action', { matchId, expectedVersion: 0, action: first.snap.legal[0] });
+    expect(r).toMatchObject({ ok: true });
+  });
+
+  it('Монополия по сети: бросок кубиков, в представлении нет состояния генератора', async () => {
+    const [a, b] = [await mkUser('mono1'), await mkUser('mono2')];
+    const matchId = await startMatch(a.id, b.id, 'monopoly');
+    const sa = await connect(a.token);
+    const snap = await emit<MatchSnapshot>(sa, 'match:resync', { matchId });
+    expect(snap.ok && snap.data.legal).toContainEqual({ t: 'roll' });
+    expect(JSON.stringify(snap.ok && snap.data.view)).not.toContain('"rng"');
+    const upd = once<MatchUpdate>(sa, 'match:update');
+    expect(await emit(sa, 'match:action', { matchId, expectedVersion: 0, action: { t: 'roll' } })).toMatchObject({ ok: true });
+    const u = await upd;
+    expect((u.view as { dice: number[] | null }).dice).toHaveLength(2);
+    // Игра сохранилась в БД как JSON и переживает перезагрузку состояния
+    const row = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
+    expect((row.state as { rng: number }).rng).toBeTypeOf('number');
+  });
 });

@@ -7,7 +7,8 @@ export const strategyGames: CatalogGame[] = [
     tagline: 'Покупайте, стройте, разоряйте',
     description: 'Классическая экономическая игра на 2–6 игроков: скупайте улицы и ставьте дома.',
     category: 'STRATEGY', minPlayers: 2, maxPlayers: 6, avgMinutes: 60, complexity: 2,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'BETA',
+    variants: [{ key: 'classic', title: 'Классическая' }, { key: 'short', title: 'Короткая (20 раундов)' }],
     rulesMarkdown: `## Цель
 Остаться единственным небанкротом.
 
@@ -28,7 +29,10 @@ export const strategyGames: CatalogGame[] = [
 Собственность можно закладывать банку и менять с другими игроками на любых условиях.
 
 ## Банкротство
-Если вы не можете расплатиться, вы выбываете, а всё имущество переходит кредитору.`,
+Если вы не можете расплатиться, вы выбываете, а всё имущество переходит кредитору.
+
+## Короткая партия
+Игра длится 20 раундов; побеждает игрок с наибольшим состоянием (деньги + собственность + постройки).`,
   },
   {
     slug: 'catan',
