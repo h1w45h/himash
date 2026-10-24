@@ -16,6 +16,13 @@ export const botTitle = (level: string) => BOT_LEVELS.find((l) => l.level === le
 
 const REASONS: Record<string, string> = {
   checkmate: 'мат',
+  nomoves: 'у соперника нет ходов',
+  quiet: '30 ходов без взятий — ничья',
+  durak: 'остался «дураком»',
+  draw: 'ничья',
+  netWorth: 'лимит раундов — по состоянию',
+  monopoly: 'соперники обанкротились',
+  uno: 'все карты сыграны',
   stalemate: 'пат — ничья',
   insufficient: 'недостаточно материала — ничья',
   repetition: 'троекратное повторение — ничья',

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
 import { DurakTable } from './durak/DurakTable';
 import { MonopolyTable } from './monopoly/MonopolyTable';
@@ -24,6 +25,7 @@ export interface GameUIProps<View = unknown, Action = unknown> {
  */
 export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   chess: ChessBoard,
+  checkers: CheckersBoard,
   durak: DurakTable,
   monopoly: MonopolyTable,
 };

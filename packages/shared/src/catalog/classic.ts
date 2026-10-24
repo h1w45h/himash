@@ -33,7 +33,7 @@ export const classicGames: CatalogGame[] = [
     tagline: 'Русские шашки на доске 8×8',
     description: 'Русские шашки: обязательное взятие, дамки-«летучки», рейтинговые партии.',
     category: 'CLASSIC', minPlayers: 2, maxPlayers: 2, avgMinutes: 15, complexity: 2,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'BETA',
     rulesMarkdown: `## Цель
 Взять или заблокировать все шашки соперника.
 
