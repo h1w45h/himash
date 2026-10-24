@@ -3,6 +3,7 @@ import { DomainEvents } from '../../common/events.module';
 import { PresenceService } from '../../common/presence.service';
 import { PrismaService } from '../../common/prisma.module';
 import { isBlockedBetween, userBrief } from '../../common/social';
+import { AchievementsService } from '../achievements/achievements.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class FriendsService {
     private readonly presence: PresenceService,
     private readonly notifications: NotificationsService,
     private readonly events: DomainEvents,
+    private readonly achievements: AchievementsService,
   ) {}
 
   async friendIds(userId: string): Promise<string[]> {
@@ -66,6 +68,8 @@ export class FriendsService {
       body: `${me.displayName} теперь ваш друг`,
       data: { userId: meId },
     });
+    void this.achievements.evaluate(meId).catch(() => undefined);
+    void this.achievements.evaluate(f.requesterId).catch(() => undefined);
     return updated;
   }
 

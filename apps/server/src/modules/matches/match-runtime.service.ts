@@ -8,6 +8,7 @@ import { DomainEvents } from '../../common/events.module';
 import { PrismaService } from '../../common/prisma.module';
 import { REDIS } from '../../common/redis.module';
 import { PresenceService } from '../../common/presence.service';
+import { AchievementsService } from '../achievements/achievements.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { rateMatch, type RatingState } from './rating/glicko2';
 
@@ -41,6 +42,7 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
     private readonly events: DomainEvents,
     private readonly presence: PresenceService,
     private readonly notifications: NotificationsService,
+    private readonly achievements: AchievementsService,
   ) {}
 
   async onModuleInit() {
@@ -145,6 +147,7 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
     }
     this.events.emit({ type: 'match.updated', matchId: m.id, payloads, ended: m.status !== 'IN_PROGRESS' });
     if (m.status === 'IN_PROGRESS') void this.pushTurns(m, actor).catch(() => undefined);
+    else if (m.status === 'FINISHED') void this.achievements.onMatchFinished(m.id).catch(() => undefined);
   }
 
   /** Игроку, которого нет в приложении, отправляем push «Ваш ход» (не чаще раза в 5 минут на партию). */

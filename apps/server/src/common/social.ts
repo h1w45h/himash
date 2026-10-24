@@ -1,6 +1,6 @@
 import type { PrismaService } from './prisma.module';
 
-export const userBrief = { id: true, username: true, displayName: true, avatarUrl: true } as const;
+export const userBrief = { id: true, username: true, displayName: true, avatarUrl: true, avatarId: true } as const;
 
 export async function areFriends(prisma: PrismaService, a: string, b: string): Promise<boolean> {
   const f = await prisma.friendship.findFirst({

@@ -110,8 +110,9 @@ model UserSettings {
   pushTournament   Boolean         @default(true)
   allowInvitesFrom InviteScope     @default(FRIENDS)
   showOnlineStatus Boolean         @default(true)
-  activeBoardTheme String? // id ShopItem
-  activeCardBack   String? // id ShopItem
+  activeBoardTheme String? // assetKey купленного предмета
+  activeCardBack   String? // assetKey
+  activeAppTheme   String? // assetKey
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -637,7 +638,7 @@ model Purchase {
   price     Int
   createdAt DateTime @default(now())
 
-  user User     @relation(fields: [userId], references: [id])
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   item ShopItem @relation(fields: [itemId], references: [id])
 
   @@index([userId, createdAt])

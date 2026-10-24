@@ -12,6 +12,8 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { PresenceModule } from './common/presence.module';
 import { FriendsModule } from './modules/friends/friends.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AchievementsModule } from './modules/achievements/achievements.module';
+import { ShopModule } from './modules/shop/shop.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { UsersModule } from './modules/users/users.module';
@@ -27,6 +29,8 @@ import { HealthController } from './modules/health/health.controller';
     EventsModule,
     PresenceModule,
     NotificationsModule,
+    AchievementsModule,
+    ShopModule,
     AuthModule,
     UsersModule,
     GamesModule,
