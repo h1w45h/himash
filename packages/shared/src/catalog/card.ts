@@ -79,7 +79,7 @@ export const cardGames: CatalogGame[] = [
     tagline: 'Быстрая весёлая игра с цветными картами',
     description: 'Избавьтесь от карт первым! Особые карты: пропуск, реверс, «+2», «+4» и смена цвета.',
     category: 'CARD', minPlayers: 2, maxPlayers: 10, avgMinutes: 15, complexity: 1,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: false, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: false, status: 'BETA', hiddenInfo: true,
     rulesMarkdown: `## Цель
 Первым сбросить все карты. Когда остаётся одна карта, нужно нажать «Uno!» — иначе добор двух карт штрафом.
 
