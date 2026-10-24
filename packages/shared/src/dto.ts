@@ -23,3 +23,26 @@ export const matchActionSchema = z.object({
   action: z.unknown(),
 });
 export type MatchActionDto = z.infer<typeof matchActionSchema>;
+
+export const joinRoomSchema = z.object({ password: z.string().max(32).optional() });
+
+export const readySchema = z.object({ ready: z.boolean() });
+
+export const addBotSchema = z.object({ level: z.enum(['EASY', 'MEDIUM', 'HARD', 'EXPERT']).default('MEDIUM') });
+
+export const inviteSchema = z.object({ userId: z.string() });
+
+export const matchmakingJoinSchema = z.object({
+  gameSlug: z.string(),
+  variantKey: z.string().optional(),
+});
+export type MatchmakingJoinDto = z.infer<typeof matchmakingJoinSchema>;
+
+/** Состояние подбора соперника, которое видит клиент. */
+export type MatchmakingStatus =
+  | { state: 'idle' }
+  | { state: 'searching'; gameSlug: string; waitedMs: number }
+  | { state: 'found'; roomCode: string; matchId: string };
+
+/** Нормализация кода комнаты: регистр и пробелы не важны. */
+export const normalizeRoomCode = (code: string) => code.trim().toUpperCase();

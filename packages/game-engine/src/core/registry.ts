@@ -15,3 +15,6 @@ export function getGame(slug: string): AnyGame {
 }
 
 export const listGames = (): AnyGame[] => [...games.values()];
+
+/** Есть ли реализация игры в движке (в каталоге игра может быть, а логики ещё нет). */
+export const hasGame = (slug: string): boolean => games.has(slug);

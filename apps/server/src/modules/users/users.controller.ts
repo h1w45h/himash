@@ -1,12 +1,11 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import type { ZodSchema } from 'zod';
-import { z } from 'zod';
+import { z, type ZodType, type ZodTypeDef } from 'zod';
 import { CurrentUser } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
 import { UsersService, updateProfileSchema, updateSettingsSchema } from './users.service';
 
 /** Разбор тела запроса через zod с русскими сообщениями об ошибках. */
-export function parse<T>(schema: ZodSchema<T>, body: unknown): T {
+export function parse<T>(schema: ZodType<T, ZodTypeDef, unknown>, body: unknown): T {
   const r = schema.safeParse(body);
   if (!r.success) throw new BadRequestException(r.error.issues.map((i) => i.message).join('; '));
   return r.data;

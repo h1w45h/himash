@@ -1,5 +1,5 @@
 import { CATEGORY_TITLES } from '@nastolki/shared';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useGame } from '@/api/games';
 import { complexityLabel, playersLabel } from '@/components/GameCard';
@@ -20,6 +20,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 export default function GameScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
+  const router = useRouter();
   const { data: game, isLoading } = useGame(slug);
 
   if (!game) {
@@ -43,7 +44,8 @@ export default function GameScreen() {
         )}
         <View style={{ gap: 10 }}>
           {soon && <Text style={{ color: colors.textMuted }}>Игра появится в одном из ближайших обновлений.</Text>}
-          {game.supportsOnline && <Button title="Играть онлайн" onPress={() => {}} disabled={soon} />}
+          {game.supportsOnline && <Button title="Играть онлайн" onPress={() => router.push({ pathname: '/matchmaking', params: { game: slug } })} disabled={soon} />}
+          {game.supportsOnline && <Button title="Создать комнату" variant="secondary" onPress={() => router.push({ pathname: '/rooms/create', params: { game: slug } })} disabled={soon} />}
           {game.hasBots && <Button title="Против бота" variant="secondary" onPress={() => {}} disabled={soon} />}
           {game.supportsLocal && <Button title="На одном устройстве" variant="secondary" onPress={() => {}} disabled={soon} />}
         </View>
