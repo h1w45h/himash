@@ -1,6 +1,7 @@
 import { getGameOrNull, registerGame } from '../core/registry';
 import { aliasGame } from './alias';
 import { dixitGame, imaginariumGame } from './association';
+import { azulGame } from './azul';
 import { backgammonGame } from './backgammon';
 import { bunkerGame } from './bunker';
 import { checkersGame } from './checkers';
@@ -15,14 +16,14 @@ import { svintusGame } from './svintus';
 import { unoGame } from './uno';
 
 /** Все реализованные игры. Добавляя игру, регистрируйте её здесь. */
-const BUILTIN = [chessGame, checkersGame, durakGame, monopolyGame, unoGame, pokerGame, backgammonGame, goGame, svintusGame, mafiaGame, codenamesGame, aliasGame, bunkerGame, dixitGame, imaginariumGame];
+const BUILTIN = [chessGame, checkersGame, durakGame, monopolyGame, unoGame, pokerGame, backgammonGame, goGame, svintusGame, mafiaGame, codenamesGame, aliasGame, bunkerGame, dixitGame, imaginariumGame, azulGame];
 
 /** Идемпотентная регистрация — безопасно вызывать и на сервере, и в приложении. */
 export function registerBuiltinGames(): void {
   for (const g of BUILTIN) if (!getGameOrNull(g.slug)) registerGame(g);
 }
 
-export { chessGame, checkersGame, durakGame, monopolyGame, unoGame, pokerGame, backgammonGame, goGame, svintusGame, mafiaGame, codenamesGame, aliasGame, bunkerGame, dixitGame, imaginariumGame };
+export { chessGame, checkersGame, durakGame, monopolyGame, unoGame, pokerGame, backgammonGame, goGame, svintusGame, mafiaGame, codenamesGame, aliasGame, bunkerGame, dixitGame, imaginariumGame, azulGame };
 export * as chess from './chess';
 export * as durak from './durak';
 export * as monopoly from './monopoly';
@@ -37,3 +38,4 @@ export * as codenames from './codenames';
 export * as alias from './alias';
 export * as bunker from './bunker';
 export * as association from './association';
+export * as azul from './azul';
