@@ -1,0 +1,28 @@
+name: Release
+# Сборка и отправка в магазины по тегу v*. Нужен секрет EXPO_TOKEN (и настроенные в EAS учётные данные iOS/Android).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Профиль EAS'
+        default: production
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - uses: expo/expo-github-action@v8
+        with: { eas-version: latest, token: '${{ secrets.EXPO_TOKEN }}' }
+      - run: npm ci
+      - name: Проверки
+        run: npm run typecheck && npm test -w @nastolki/game-engine
+      - name: Сборка и отправка (iOS + Android)
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+        run: eas build --platform all --profile ${{ inputs.profile || 'production' }} --non-interactive --auto-submit

@@ -1,11 +1,12 @@
 import { useAuth } from '@/auth/session';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, Share, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHistory, useStats } from '@/api/social';
 import { useMe, useUpdateProfile, useUpdateSettings } from '@/api/users';
 import { Avatar } from '@/components/Avatar';
+import { api, API_BASE_URL } from '@/api/client';
 import { Button, ErrorText, Field } from '@/components/ui';
 
 import { useSettings, type ThemeMode } from '@/stores/settings';
@@ -135,7 +136,23 @@ export default function Profile() {
           )}
         </Card>
 
+        <Button title="Позвать друзей играть" onPress={() => void Share.share({ message: 'Играй со мной в «Настолки Онлайн»: шахматы, дурак, монополия и ещё 18 игр! https://nastolki.online' })} />
         <Button title="Выйти" variant="secondary" onPress={() => signOut()} />
+        <Button title="Политика конфиденциальности" variant="secondary" onPress={() => void Linking.openURL(`${API_BASE_URL}/privacy`)} />
+        <Button
+          title="Удалить аккаунт"
+          variant="secondary"
+          onPress={() =>
+            Alert.alert('Удалить аккаунт?', 'Профиль, друзья и сообщения будут удалены без возможности восстановления.', [
+              { text: 'Отмена', style: 'cancel' },
+              {
+                text: 'Удалить',
+                style: 'destructive',
+                onPress: () => void api('/users/me', { method: 'DELETE' }).then(() => signOut()).catch((e: Error) => Alert.alert('Ошибка', e.message)),
+              },
+            ])
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );

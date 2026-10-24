@@ -126,6 +126,12 @@ export class AuthService {
     throw new UnauthorizedException('Не удалось создать профиль.');
   }
 
+  /** Удаляет учётную запись во внешнем провайдере (Clerk). Ошибки не критичны: локальные данные уже обезличены. */
+  async deleteExternal(clerkId: string): Promise<void> {
+    if (clerkId.startsWith('dev_') || !process.env.CLERK_SECRET_KEY) return;
+    await this.clerk.users.deleteUser(clerkId).catch((e) => this.log.warn(`Clerk deleteUser: ${String(e)}`));
+  }
+
   async markDeleted(clerkId: string): Promise<void> {
     await this.prisma.user.updateMany({
       where: { clerkId },

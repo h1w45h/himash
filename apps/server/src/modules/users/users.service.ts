@@ -32,6 +32,23 @@ export const updateSettingsSchema = z
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Удаление аккаунта по требованию магазинов приложений: профиль обезличивается, личные данные, устройства
+   * и сообщения удаляются; партии остаются в истории соперников под именем «Удалённый игрок».
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.device.deleteMany({ where: { userId } }),
+      this.prisma.chatMessage.deleteMany({ where: { OR: [{ senderId: userId }, { recipientId: userId }] } }),
+      this.prisma.friendship.deleteMany({ where: { OR: [{ requesterId: userId }, { addresseeId: userId }] } }),
+      this.prisma.authProviderLink.deleteMany({ where: { userId } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { status: 'DELETED', username: `deleted_${userId.slice(-10)}`, displayName: 'Удалённый игрок', email: null, avatarUrl: null, avatarId: null, bio: null, country: null },
+      }),
+    ]);
+  }
+
   me(userId: string) {
     return this.prisma.user.findUniqueOrThrow({
       where: { id: userId },

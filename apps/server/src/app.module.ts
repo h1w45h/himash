@@ -18,6 +18,7 @@ import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { UsersModule } from './modules/users/users.module';
+import { LegalController } from './modules/legal/legal.controller';
 import { HealthController } from './modules/health/health.controller';
 
 @Module({
@@ -43,6 +44,6 @@ import { HealthController } from './modules/health/health.controller';
     TournamentsModule,
     RealtimeModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, LegalController],
 })
 export class AppModule {}

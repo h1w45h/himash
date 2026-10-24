@@ -1,7 +1,8 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { z, type ZodType, type ZodTypeDef } from 'zod';
 import { CurrentUser } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
+import { AuthService } from '../auth/auth.service';
 import { UsersService, updateProfileSchema, updateSettingsSchema } from './users.service';
 
 /** Разбор тела запроса через zod с русскими сообщениями об ошибках. */
@@ -13,11 +14,21 @@ export function parse<T>(schema: ZodType<T, ZodTypeDef, unknown>, body: unknown)
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly auth: AuthService,
+  ) {}
 
   @Get('me')
   me(@CurrentUser() user: AuthUser) {
     return this.users.me(user.id);
+  }
+
+  @Delete('me')
+  async deleteMe(@CurrentUser() user: AuthUser) {
+    await this.users.deleteAccount(user.id);
+    await this.auth.deleteExternal(user.clerkId);
+    return { ok: true };
   }
 
   @Get('me/stats')
