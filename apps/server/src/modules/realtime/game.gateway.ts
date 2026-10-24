@@ -142,6 +142,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       case 'chat.message':
         this.ns.to(ev.roomKey).emit(GameEvents.ChatMessage, ev.message);
         break;
+      case 'tournament.match':
+        for (const id of ev.userIds) this.ns.to(`user:${id}`).emit('tournament:match', { tournamentId: ev.tournamentId, matchId: ev.matchId });
+        break;
       case 'invitation.created':
         this.ns.to(`user:${ev.receiverId}`).emit(SocialEvents.Invite, { invitationId: ev.invitationId });
         break;

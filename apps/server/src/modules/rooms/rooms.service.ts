@@ -279,7 +279,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         roomId: room.id,
         gameId: room.gameId,
         slug: room.game.slug,
-        mode: 'ONLINE',
+        mode: room.mode,
         variantKey: room.variantKey,
         // С ботами партия не рейтинговая: иначе можно «фармить» рейтинг.
         isRated: room.isRated && !room.players.some((p) => p.isBot),
@@ -296,7 +296,12 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Для матчмейкинга: закрытая комната из найденных игроков, партия стартует сразу. */
-  async createMatched(gameSlug: string, variantKey: string | null, userIds: string[]) {
+  async createMatched(
+    gameSlug: string,
+    variantKey: string | null,
+    userIds: string[],
+    opts: { mode?: 'ONLINE' | 'TOURNAMENT'; turnTimeSec?: number } = {},
+  ) {
     const game = await this.prisma.game.findUniqueOrThrow({ where: { slug: gameSlug } });
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
@@ -306,6 +311,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
             gameId: game.id,
             hostId: userIds[0] as string,
             visibility: 'PRIVATE',
+            mode: opts.mode ?? 'ONLINE',
+            turnTimeSec: opts.turnTimeSec,
             maxPlayers: userIds.length,
             minPlayers: userIds.length,
             isRated: game.isRated,

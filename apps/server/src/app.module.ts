@@ -14,6 +14,7 @@ import { FriendsModule } from './modules/friends/friends.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AchievementsModule } from './modules/achievements/achievements.module';
 import { ShopModule } from './modules/shop/shop.module';
+import { TournamentsModule } from './modules/tournaments/tournaments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { UsersModule } from './modules/users/users.module';
@@ -39,6 +40,7 @@ import { HealthController } from './modules/health/health.controller';
     MatchmakingModule,
     ChatModule,
     FriendsModule,
+    TournamentsModule,
     RealtimeModule,
   ],
   controllers: [HealthController],

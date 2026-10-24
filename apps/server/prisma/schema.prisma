@@ -571,6 +571,7 @@ model TournamentMatch {
   matchId      String?   @unique
   nextMatchId  String? // куда идёт победитель
   scheduledAt  DateTime?
+  attempts     Int      @default(1) // сыгранные подходы (ничья → переигровка)
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   match      Match?     @relation(fields: [matchId], references: [id])

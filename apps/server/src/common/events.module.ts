@@ -10,6 +10,8 @@ export type DomainEvent =
   /** Обновление партии: у каждого места свой payload (скрытая информация). */
   | { type: 'match.updated'; matchId: string; payloads: Record<number, MatchUpdate>; ended: boolean }
   | { type: 'chat.message'; roomKey: string; message: ChatMessageDto }
+  | { type: 'match.finished'; matchId: string }
+  | { type: 'tournament.match'; userIds: string[]; matchId: string; tournamentId: string }
   | { type: 'invitation.created'; receiverId: string; invitationId: string };
 
 /**

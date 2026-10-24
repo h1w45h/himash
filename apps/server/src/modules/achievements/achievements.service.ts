@@ -40,7 +40,7 @@ export class AchievementsService {
         where: { userId, result: { not: null }, match: { status: 'FINISHED' } },
         select: { result: true, match: { select: { game: { select: { slug: true } } } } },
       }),
-      this.prisma.rating.findMany({ where: { userId }, select: { peak: true, game: { select: { slug: true } } } }),
+      this.prisma.rating.findMany({ where: { userId }, select: { peak: true, wins: true, losses: true, draws: true, game: { select: { slug: true } } } }),
       this.prisma.friendship.count({ where: { status: 'ACCEPTED', OR: [{ requesterId: userId }, { addresseeId: userId }] } }),
     ]);
     const wins = new Map<string, number>();
@@ -54,10 +54,12 @@ export class AchievementsService {
         wins.set(slug, (wins.get(slug) ?? 0) + 1);
       }
     }
-    const maxRating = new Map(ratings.map((r) => [r.game.slug, r.peak]));
+    // Рейтинг новичка (большое отклонение) скачет сильно — достижения по рейтингу учитываем после 10 партий в игре.
+    const settled = ratings.filter((r) => r.wins + r.losses + r.draws >= 10);
+    const maxRating = new Map(settled.map((r) => [r.game.slug, r.peak]));
     return {
       wins, games, totalWins, totalGames: rows.length, distinct: games.size, maxRating,
-      bestRating: Math.max(0, ...ratings.map((r) => r.peak)), friends,
+      bestRating: Math.max(0, ...settled.map((r) => r.peak)), friends,
     };
   }
 

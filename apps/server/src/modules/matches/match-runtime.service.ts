@@ -147,7 +147,10 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
     }
     this.events.emit({ type: 'match.updated', matchId: m.id, payloads, ended: m.status !== 'IN_PROGRESS' });
     if (m.status === 'IN_PROGRESS') void this.pushTurns(m, actor).catch(() => undefined);
-    else if (m.status === 'FINISHED') void this.achievements.onMatchFinished(m.id).catch(() => undefined);
+    else if (m.status === 'FINISHED') {
+      void this.achievements.onMatchFinished(m.id).catch(() => undefined);
+      this.events.emit({ type: 'match.finished', matchId: m.id }); // турниры и прочие подписчики
+    }
   }
 
   /** Игроку, которого нет в приложении, отправляем push «Ваш ход» (не чаще раза в 5 минут на партию). */
