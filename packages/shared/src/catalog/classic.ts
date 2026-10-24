@@ -74,7 +74,7 @@ export const classicGames: CatalogGame[] = [
     tagline: 'Древняя игра на захват территории',
     description: 'Го на досках 9×9, 13×13 и 19×19 с подсчётом по японским или китайским правилам.',
     category: 'CLASSIC', minPlayers: 2, maxPlayers: 2, avgMinutes: 40, complexity: 4,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'BETA',
     variants: [{ key: '9', title: '9×9' }, { key: '13', title: '13×13' }, { key: '19', title: '19×19' }],
     rulesMarkdown: `## Цель
 Окружить камнями больше территории, чем соперник.
@@ -87,6 +87,6 @@ export const classicGames: CatalogGame[] = [
 - **Ко**: нельзя ходом возвращать позицию, существовавшую перед ходом соперника.
 
 ## Конец
-Партия заканчивается, когда оба игрока подряд пасуют. Очки — территория плюс захваченные камни; белым добавляется коми (компенсация за второй ход).`,
+Партия заканчивается, когда оба игрока подряд пасуют. Подсчёт по площади: камни на доске плюс окружённые пустые пункты; белым добавляется коми (5,5 на 9×9 и 6,5 на больших досках). Мёртвые камни автоматически не снимаются — их нужно взять игрой до паса.`,
   },
 ];

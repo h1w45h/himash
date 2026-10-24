@@ -3,6 +3,7 @@ import { BackgammonBoard } from './backgammon/BackgammonBoard';
 import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
 import { DurakTable } from './durak/DurakTable';
+import { GoBoard } from './go/GoBoard';
 import { MonopolyTable } from './monopoly/MonopolyTable';
 import { PokerTable } from './poker/PokerTable';
 import { UnoTable } from './uno/UnoTable';
@@ -34,4 +35,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   uno: UnoTable,
   poker: PokerTable,
   backgammon: BackgammonBoard,
+  go: GoBoard,
 };

@@ -1,5 +1,6 @@
 /** Подписи мест и причин окончания партии — общие для онлайн и оффлайн экранов. */
 export function seatLabel(slug: string, seat: number): string {
+  if (slug === 'go') return seat === 0 ? 'Чёрные' : 'Белые';
   if (slug === 'chess' || slug === 'checkers' || slug === 'backgammon') return seat === 0 ? 'Белые' : 'Чёрные';
   return `Игрок ${seat + 1}`;
 }
@@ -23,6 +24,8 @@ const REASONS: Record<string, string> = {
   netWorth: 'лимит раундов — по состоянию',
   monopoly: 'соперники обанкротились',
   uno: 'все карты сыграны',
+  score: 'по очкам (площадь + коми)',
+  limit: 'лимит ходов — по очкам',
   mars: 'марс — двойная победа',
   oin: 'все шашки выведены',
   allchips: 'все фишки собраны',
