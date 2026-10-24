@@ -67,6 +67,22 @@ export class UsersService {
     return u;
   }
 
+  async stats(userId: string) {
+    const [ratings, totals] = await Promise.all([
+      this.prisma.rating.findMany({
+        where: { userId },
+        orderBy: { rating: 'desc' },
+        select: { rating: true, wins: true, losses: true, draws: true, peak: true, game: { select: { slug: true, title: true } } },
+      }),
+      this.prisma.matchPlayer.groupBy({ by: ['result'], where: { userId, result: { not: null } }, _count: true }),
+    ]);
+    const count = (r: string) => totals.find((t) => t.result === r)?._count ?? 0;
+    return {
+      ratings,
+      totals: { wins: count('WIN'), losses: count('LOSS'), draws: count('DRAW'), left: count('LEFT') },
+    };
+  }
+
   search(query: string, selfId: string) {
     return this.prisma.user.findMany({
       where: {

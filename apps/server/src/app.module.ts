@@ -9,6 +9,9 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 import { MatchesModule } from './modules/matches/matches.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { PresenceModule } from './common/presence.module';
+import { FriendsModule } from './modules/friends/friends.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { UsersModule } from './modules/users/users.module';
@@ -22,6 +25,8 @@ import { HealthController } from './modules/health/health.controller';
     PrismaModule,
     RedisModule,
     EventsModule,
+    PresenceModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     GamesModule,
@@ -29,6 +34,7 @@ import { HealthController } from './modules/health/health.controller';
     RoomsModule,
     MatchmakingModule,
     ChatModule,
+    FriendsModule,
     RealtimeModule,
   ],
   controllers: [HealthController],

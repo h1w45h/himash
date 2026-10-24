@@ -74,7 +74,14 @@ export interface MatchUpdate extends Omit<MatchSnapshot, 'variantKey' | 'roomCod
 export interface ChatMessageDto {
   id: string;
   scope: 'ROOM' | 'MATCH' | 'DIRECT' | 'TOURNAMENT';
+  recipientId: string | null;
   body: string;
   createdAt: string;
   sender: { id: string; username: string; displayName: string; avatarUrl: string | null } | null;
+}
+
+export type PresenceStatusDto = 'online' | 'playing' | 'offline';
+export interface PresenceUpdate {
+  userId: string;
+  status: PresenceStatusDto;
 }

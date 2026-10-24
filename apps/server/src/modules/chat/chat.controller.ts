@@ -1,4 +1,4 @@
-import { ForbiddenException, Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import { ForbiddenException, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
 import { RealtimeError } from '@nastolki/shared';
 import { CurrentUser } from '../auth/auth.decorators';
 import type { AuthUser } from '../auth/auth.types';
@@ -16,6 +16,16 @@ export class ChatController {
   @Get('matches/:id')
   match(@CurrentUser() u: AuthUser, @Param('id') id: string) {
     return this.wrap(() => this.chat.history(u.id, 'MATCH', id));
+  }
+
+  @Get('direct/:userId')
+  direct(@CurrentUser() u: AuthUser, @Param('userId') userId: string) {
+    return this.wrap(() => this.chat.history(u.id, 'DIRECT', userId));
+  }
+
+  @Post('direct/:userId/read')
+  read(@CurrentUser() u: AuthUser, @Param('userId') userId: string) {
+    return this.chat.markRead(u.id, userId);
   }
 
   private async wrap<T>(fn: () => Promise<T>): Promise<T> {

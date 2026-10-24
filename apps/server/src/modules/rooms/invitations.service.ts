@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { DomainEvents } from '../../common/events.module';
 import { PrismaService } from '../../common/prisma.module';
 import { areFriends, isBlockedBetween, userBrief } from '../../common/social';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RoomsService } from './rooms.service';
 
 const INVITE_TTL_MS = 10 * 60_000;
@@ -12,6 +13,7 @@ export class InvitationsService {
     private readonly prisma: PrismaService,
     private readonly rooms: RoomsService,
     private readonly events: DomainEvents,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(senderId: string, code: string, receiverId: string) {
@@ -38,20 +40,14 @@ export class InvitationsService {
     }
 
     const sender = await this.prisma.user.findUniqueOrThrow({ where: { id: senderId }, select: { displayName: true } });
-    const inv = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.invitation.create({
-        data: { roomId: room.id, senderId, receiverId, expiresAt: new Date(Date.now() + INVITE_TTL_MS) },
-      });
-      await tx.notification.create({
-        data: {
-          userId: receiverId,
-          type: 'ROOM_INVITE',
-          title: `${sender.displayName} зовёт вас играть`,
-          body: `Игра: ${room.game.title}. Код комнаты: ${room.code}`,
-          data: { invitationId: created.id, roomCode: room.code },
-        },
-      });
-      return created;
+    const inv = await this.prisma.invitation.create({
+      data: { roomId: room.id, senderId, receiverId, expiresAt: new Date(Date.now() + INVITE_TTL_MS) },
+    });
+    await this.notifications.notify(receiverId, {
+      type: 'ROOM_INVITE',
+      title: `${sender.displayName} зовёт вас играть`,
+      body: `Игра: ${room.game.title}. Код комнаты: ${room.code}`,
+      data: { invitationId: inv.id, roomCode: room.code },
     });
     this.events.emit({ type: 'invitation.created', receiverId, invitationId: inv.id });
     return inv;

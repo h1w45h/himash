@@ -1,6 +1,6 @@
 import { Logger, OnModuleDestroy } from '@nestjs/common';
 import {
-  ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayInit, SubscribeMessage, WebSocketGateway,
+  ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway,
 } from '@nestjs/websockets';
 import type { ZodType, ZodTypeDef } from 'zod';
 import type { Namespace, Socket } from 'socket.io';
@@ -11,6 +11,8 @@ import {
 } from '@nastolki/shared';
 import type { User } from '@prisma/client';
 import { DomainEvents, type DomainEvent } from '../../common/events.module';
+import { PresenceService } from '../../common/presence.service';
+import { FriendsService } from '../friends/friends.service';
 import { AuthService } from '../auth/auth.service';
 import { ChatService } from '../chat/chat.service';
 import { MatchRuntime } from '../matches/match-runtime.service';
@@ -40,7 +42,7 @@ function input<T>(schema: ZodType<T, ZodTypeDef, unknown>, data: unknown): T {
 const seatRoom = (matchId: string, seat: number) => `match:${matchId}:seat:${seat}`;
 
 @WebSocketGateway({ namespace: '/game' })
-export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnModuleDestroy {
+export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleDestroy {
   private ns!: Namespace;
   private sub?: Subscription;
 
@@ -50,6 +52,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnModule
     private readonly runtime: MatchRuntime,
     private readonly chat: ChatService,
     private readonly events: DomainEvents,
+    private readonly presence: PresenceService,
+    private readonly friends: FriendsService,
   ) {}
 
   afterInit(ns: Namespace) {
@@ -72,8 +76,35 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnModule
     this.sub?.unsubscribe();
   }
 
-  handleConnection(socket: AuthedSocket) {
-    void socket.join(`user:${socket.data.user.id}`); // личный канал: приглашения, найденные матчи
+  async handleConnection(socket: AuthedSocket) {
+    const id = socket.data.user.id;
+    await socket.join(`user:${id}`); // личный канал: приглашения, найденные матчи, личные сообщения
+    await this.presence.touch(id);
+    void this.broadcastPresence(id);
+  }
+
+  async handleDisconnect(socket: AuthedSocket) {
+    const id = socket.data?.user?.id;
+    if (!id) return;
+    // Игрок мог быть подключён с нескольких устройств — «оффлайн» только когда не осталось ни одного сокета.
+    const rest = await this.ns.in(`user:${id}`).fetchSockets();
+    if (rest.length === 0) {
+      await this.presence.clear(id);
+      void this.broadcastPresence(id);
+    }
+  }
+
+  /** Сообщает друзьям об изменении статуса игрока. */
+  private async broadcastPresence(userId: string) {
+    const [status, friendIds] = await Promise.all([this.presence.statuses([userId]), this.friends.friendIds(userId)]);
+    const payload = { userId, status: status.get(userId) ?? 'offline' };
+    for (const f of friendIds) this.ns.to(`user:${f}`).emit(SocialEvents.PresenceUpdate, payload);
+  }
+
+  @SubscribeMessage('presence:ping')
+  async ping(@ConnectedSocket() s: AuthedSocket) {
+    await this.presence.touch(s.data.user.id);
+    return { ok: true };
   }
 
   // ───────── события домена → клиенты ─────────
@@ -89,7 +120,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnModule
         this.ns.to(`room:${ev.roomId}`).emit('room:closed', { code: ev.code });
         break;
       case 'match.started':
-        for (const id of ev.userIds) this.ns.to(`user:${id}`).emit('match:started', { matchId: ev.matchId });
+        for (const id of ev.userIds) {
+          this.ns.to(`user:${id}`).emit('match:started', { matchId: ev.matchId });
+          void this.broadcastPresence(id); // статус «в игре»
+        }
         break;
       case 'matchmaking.found':
         for (const id of ev.userIds) this.ns.to(`user:${id}`).emit(GameEvents.MatchmakingFound, { roomCode: ev.roomCode, matchId: ev.matchId });
@@ -99,6 +133,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnModule
           const room = seatRoom(ev.matchId, Number(seat));
           this.ns.to(room).emit(GameEvents.MatchUpdate, payload);
           if (ev.ended) this.ns.to(room).emit(GameEvents.MatchEnded, payload);
+        }
+        if (ev.ended) {
+          const any = Object.values(ev.payloads)[0];
+          for (const p of any?.players ?? []) if (p.userId) void this.broadcastPresence(p.userId);
         }
         break;
       case 'chat.message':

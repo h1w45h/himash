@@ -51,8 +51,8 @@ export const roomJoinEventSchema = z.object({ code: z.string().min(1).max(12) })
 export const matchJoinEventSchema = z.object({ matchId: z.string() });
 export const matchResyncSchema = z.object({ matchId: z.string(), sinceVersion: z.number().int().nonnegative().optional() });
 export const chatSendSchema = z.object({
-  scope: z.enum(['ROOM', 'MATCH']),
-  /** Код комнаты (ROOM) или id партии (MATCH). */
+  scope: z.enum(['ROOM', 'MATCH', 'DIRECT']),
+  /** Код комнаты (ROOM), id партии (MATCH) или id друга (DIRECT). */
   target: z.string(),
   body: z.string().trim().min(1, 'Пустое сообщение').max(500, 'Слишком длинное сообщение'),
 });

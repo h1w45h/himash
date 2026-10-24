@@ -7,6 +7,8 @@ import type { Prisma } from '@prisma/client';
 import { DomainEvents } from '../../common/events.module';
 import { PrismaService } from '../../common/prisma.module';
 import { REDIS } from '../../common/redis.module';
+import { PresenceService } from '../../common/presence.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { rateMatch, type RatingState } from './rating/glicko2';
 
 const matchInclude = {
@@ -37,6 +39,8 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     @Inject(REDIS) private readonly redis: Redis,
     private readonly events: DomainEvents,
+    private readonly presence: PresenceService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async onModuleInit() {
@@ -140,6 +144,22 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
       payloads[p.seat] = { ...rest, lastAction: shown };
     }
     this.events.emit({ type: 'match.updated', matchId: m.id, payloads, ended: m.status !== 'IN_PROGRESS' });
+    if (m.status === 'IN_PROGRESS') void this.pushTurns(m, actor).catch(() => undefined);
+  }
+
+  /** Игроку, которого нет в приложении, отправляем push «Ваш ход» (не чаще раза в 5 минут на партию). */
+  private async pushTurns(m: MatchFull, actor: number | null) {
+    const game = getGame(m.game.slug);
+    for (const seat of game.currentSeats(m.state)) {
+      const p = m.players.find((x) => x.seat === seat);
+      if (!p?.userId || p.isBot || seat === actor || (await this.presence.isOnline(p.userId))) continue;
+      const first = await this.redis.set(`turnpush:${m.id}:${p.userId}`, '1', 'EX', 300, 'NX');
+      if (first) {
+        await this.notifications.pushOnly(p.userId, {
+          type: 'YOUR_TURN', title: 'Ваш ход', body: `Соперник сходил — партия ждёт вас`, data: { matchId: m.id },
+        });
+      }
+    }
   }
 
   // ───────── ходы ─────────

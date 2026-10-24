@@ -20,6 +20,11 @@ export class UsersController {
     return this.users.me(user.id);
   }
 
+  @Get('me/stats')
+  stats(@CurrentUser() user: AuthUser) {
+    return this.users.stats(user.id);
+  }
+
   @Patch('me')
   updateProfile(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.users.updateProfile(user.id, parse(updateProfileSchema, body));
