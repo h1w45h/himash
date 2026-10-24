@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './common/prisma.module';
 import { RedisModule } from './common/redis.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 import { HealthController } from './modules/health/health.controller';
 
 @Module({
@@ -12,6 +14,8 @@ import { HealthController } from './modules/health/health.controller';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     PrismaModule,
     RedisModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [HealthController],
 })

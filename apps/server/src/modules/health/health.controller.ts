@@ -1,5 +1,6 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { Public } from '../auth/auth.decorators';
 import { PrismaService } from '../../common/prisma.module';
 import { REDIS } from '../../common/redis.module';
 
@@ -10,6 +11,7 @@ export class HealthController {
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
+  @Public()
   @Get()
   async check() {
     await this.prisma.$queryRaw`SELECT 1`;
