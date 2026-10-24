@@ -4,6 +4,7 @@ import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
 import { DurakTable } from './durak/DurakTable';
 import { GoBoard } from './go/GoBoard';
+import { MafiaTable } from './mafia/MafiaTable';
 import { MonopolyTable } from './monopoly/MonopolyTable';
 import { PokerTable } from './poker/PokerTable';
 import { SvintusTable } from './svintus/SvintusTable';
@@ -38,4 +39,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   backgammon: BackgammonBoard,
   go: GoBoard,
   svintus: SvintusTable,
+  mafia: MafiaTable,
 };
