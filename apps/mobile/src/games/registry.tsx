@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { BackgammonBoard } from './backgammon/BackgammonBoard';
 import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
 import { DurakTable } from './durak/DurakTable';
@@ -32,4 +33,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   monopoly: MonopolyTable,
   uno: UnoTable,
   poker: PokerTable,
+  backgammon: BackgammonBoard,
 };
