@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { ChessBoard } from './chess/ChessBoard';
+import { DurakTable } from './durak/DurakTable';
 
 /** Свойства, которые получает интерфейс любой игры. */
 export interface GameUIProps<View = unknown, Action = unknown> {
@@ -22,4 +23,5 @@ export interface GameUIProps<View = unknown, Action = unknown> {
  */
 export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   chess: ChessBoard,
+  durak: DurakTable,
 };

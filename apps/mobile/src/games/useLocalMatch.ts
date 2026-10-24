@@ -12,6 +12,8 @@ export interface LocalConfig {
   bots?: Record<number, 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT'>;
   /** Если у игры скрытая информация — между ходами людей показывается экран передачи устройства. */
   hiddenInfo?: boolean;
+  /** Вариант правил (например, 'perevodnoy'). */
+  variant?: string;
   /** Ключ сохранения; одна незавершённая партия на ключ. */
   saveKey: string;
 }
@@ -43,7 +45,7 @@ export const clearSavedLocalMatch = (saveKey: string) => store.delete(saveKey);
  */
 export function useLocalMatch(cfg: LocalConfig) {
   const game = useMemo(() => getGame(cfg.slug), [cfg.slug]);
-  const [session, setSession] = useState<Session>(() => load(cfg) ?? startSession(cfg.slug, { players: cfg.players, seed: randomSeed() }));
+  const [session, setSession] = useState<Session>(() => load(cfg) ?? startSession(cfg.slug, { players: cfg.players, seed: randomSeed(), variant: cfg.variant }));
   const [error, setError] = useState<string | null>(null);
   const [handover, setHandover] = useState<number | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -125,7 +127,7 @@ export function useLocalMatch(cfg: LocalConfig) {
     act: (action: unknown) => myTurn && apply(viewSeat, action),
     restart: () => {
       store.delete(cfgRef.current.saveKey);
-      setSession(startSession(cfgRef.current.slug, { players: cfgRef.current.players, seed: randomSeed() }));
+      setSession(startSession(cfgRef.current.slug, { players: cfgRef.current.players, seed: randomSeed(), variant: cfgRef.current.variant }));
       setError(null);
       setHandover(null);
     },

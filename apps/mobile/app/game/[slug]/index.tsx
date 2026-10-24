@@ -25,6 +25,8 @@ export default function GameScreen() {
   const router = useRouter();
   const [level, setLevel] = useState<BotLevelKey>('MEDIUM');
   const [second, setSecond] = useState(false);
+  const [variant, setVariant] = useState<string | undefined>(undefined);
+  const [players, setPlayers] = useState<number | null>(null);
   const { data: game, isLoading } = useGame(slug);
 
   if (!game) {
@@ -44,13 +46,29 @@ export default function GameScreen() {
         </View>
         <Text style={{ color: colors.textMuted }}>{CATEGORY_TITLES[game.category]}</Text>
         {game.variants && (
-          <Text style={{ color: colors.text }}>Варианты: {game.variants.map((v) => v.title).join(', ')}</Text>
+          <View style={{ gap: 6 }}>
+            <Text style={{ color: colors.text, fontWeight: '700' }}>Вариант</Text>
+            <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+              {game.variants.map((v) => (
+                <Button key={v.key} title={v.title} variant={(variant ?? game.variants?.[0]?.key) === v.key ? 'primary' : 'secondary'} onPress={() => setVariant(v.key)} />
+              ))}
+            </View>
+          </View>
+        )}
+        {game.maxPlayers > game.minPlayers && !soon && (
+          <View style={{ gap: 6 }}>
+            <Text style={{ color: colors.text, fontWeight: '700' }}>Игроков для локальной игры: {players ?? game.minPlayers}</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Button title="−" variant="secondary" disabled={(players ?? game.minPlayers) <= game.minPlayers} onPress={() => setPlayers((players ?? game.minPlayers) - 1)} />
+              <Button title="+" variant="secondary" disabled={(players ?? game.minPlayers) >= game.maxPlayers} onPress={() => setPlayers((players ?? game.minPlayers) + 1)} />
+            </View>
+          </View>
         )}
         <View style={{ gap: 10 }}>
           {soon && <Text style={{ color: colors.textMuted }}>Игра появится в одном из ближайших обновлений.</Text>}
-          {game.supportsOnline && <Button title="Играть онлайн" onPress={() => router.push({ pathname: '/matchmaking', params: { game: slug } })} disabled={soon} />}
+          {game.supportsOnline && <Button title="Играть онлайн" onPress={() => router.push({ pathname: '/matchmaking', params: { game: slug, variant: variant ?? game.variants?.[0]?.key } })} disabled={soon} />}
           {game.supportsOnline && <Button title="Создать комнату" variant="secondary" onPress={() => router.push({ pathname: '/rooms/create', params: { game: slug } })} disabled={soon} />}
-          {game.supportsLocal && <Button title="На одном устройстве" variant="secondary" onPress={() => router.push({ pathname: '/local/[slug]', params: { slug } })} disabled={soon} />}
+          {game.supportsLocal && <Button title="На одном устройстве" variant="secondary" onPress={() => router.push({ pathname: '/local/[slug]', params: { slug, players: String(players ?? game.minPlayers), variant: variant ?? game.variants?.[0]?.key } })} disabled={soon} />}
           {game.hasBots && !soon && (
             <View style={{ gap: 8, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
               <Text style={{ color: colors.text, fontWeight: '700' }}>Против бота</Text>
@@ -60,7 +78,7 @@ export default function GameScreen() {
                 ))}
               </View>
               <Button title={second ? 'Я хожу вторым' : 'Я хожу первым'} variant="secondary" onPress={() => setSecond((v) => !v)} />
-              <Button title="Играть с ботом" onPress={() => router.push({ pathname: '/bot/[slug]', params: { slug, level, second: second ? '1' : '0' } })} />
+              <Button title="Играть с ботом" onPress={() => router.push({ pathname: '/bot/[slug]', params: { slug, level, second: second ? '1' : '0', players: String(players ?? 2), variant: variant ?? game.variants?.[0]?.key } })} />
             </View>
           )}
         </View>
