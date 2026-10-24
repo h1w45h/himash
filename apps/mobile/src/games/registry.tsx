@@ -1,7 +1,9 @@
 import type { ComponentType } from 'react';
+import { AliasTable } from './alias/AliasTable';
 import { BackgammonBoard } from './backgammon/BackgammonBoard';
 import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
+import { CodenamesBoard } from './codenames/CodenamesBoard';
 import { DurakTable } from './durak/DurakTable';
 import { GoBoard } from './go/GoBoard';
 import { MafiaTable } from './mafia/MafiaTable';
@@ -40,4 +42,6 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   go: GoBoard,
   svintus: SvintusTable,
   mafia: MafiaTable,
+  codenames: CodenamesBoard,
+  alias: AliasTable,
 };

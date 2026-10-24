@@ -1,5 +1,7 @@
 /** Подписи мест и причин окончания партии — общие для онлайн и оффлайн экранов. */
 export function seatLabel(slug: string, seat: number): string {
+  if (slug === 'alias') return seat % 2 === 0 ? 'Красные' : 'Синие';
+  if (slug === 'codenames') return seat % 2 === 0 ? (seat === 0 ? 'Красные · капитан' : 'Красные') : (seat === 1 ? 'Синие · капитан' : 'Синие');
   if (slug === 'go') return seat === 0 ? 'Чёрные' : 'Белые';
   if (slug === 'chess' || slug === 'checkers' || slug === 'backgammon') return seat === 0 ? 'Белые' : 'Чёрные';
   return `Игрок ${seat + 1}`;
@@ -24,6 +26,9 @@ const REASONS: Record<string, string> = {
   netWorth: 'лимит раундов — по состоянию',
   monopoly: 'соперники обанкротились',
   uno: 'все карты сыграны',
+  points: 'набрана целевая сумма очков',
+  agents: 'найдены все агенты команды',
+  assassin: 'открыт убийца',
   town: 'мирные жители разоблачили мафию',
   mafia: 'мафия захватила город',
   svintus: 'остался последний игрок',

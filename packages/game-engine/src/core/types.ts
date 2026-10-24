@@ -58,6 +58,13 @@ export interface GameDefinition<State, Action, View = State, Options = unknown> 
   chooseBotAction?(state: State, seat: Seat, bot: BotContext): Action;
   /** Можно ли игроку писать в чат партии прямо сейчас (мафия ночью, выбывшие игроки и т.п.). По умолчанию — можно. */
   chatAllowed?(state: State, seat: Seat): boolean;
+  /** Проверка текста сообщения в чате партии: вернуть текст ошибки, чтобы запретить отправку (например, «нельзя называть слово»). */
+  chatFilter?(state: State, seat: Seat, body: string): string | null;
+  /**
+   * true — после перехода prev → next таймер хода НЕ сбрасывается (раунд на время в «Элиасе»:
+   * таймер идёт, пока игрок объясняет слова одно за другим).
+   */
+  keepDeadline?(prev: State, next: State): boolean;
   /** Действие, выполняемое при истечении таймера хода. */
   timeoutAction?(state: State, seat: Seat): Action | null;
 }

@@ -203,7 +203,7 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
           state: state as Prisma.InputJsonValue,
           stateVersion: version,
           currentSeat: r.outcome ? null : (seats[0] ?? null),
-          turnDeadline: r.outcome || !turnSec ? null : new Date(Date.now() + turnSec * 1000),
+          turnDeadline: r.outcome || !turnSec ? null : game.keepDeadline?.(m.state, state) && m.turnDeadline ? m.turnDeadline : new Date(Date.now() + turnSec * 1000),
         },
       });
       if (claimed.count === 0) throw new RealtimeError('STALE', 'Состояние партии устарело');

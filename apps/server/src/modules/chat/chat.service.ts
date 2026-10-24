@@ -53,6 +53,7 @@ export class ChatService {
   }
 
   async send(userId: string, dto: ChatSendDto): Promise<ChatMessageDto> {
+    if (dto.scope === 'MATCH') await this.checkFilter(userId, dto.target, dto.body);
     const rlKey = `chat:rl:${userId}`;
     const count = await this.redis.incr(rlKey);
     if (count === 1) await this.redis.expire(rlKey, RATE_WINDOW_SEC);
@@ -72,6 +73,15 @@ export class ChatService {
       });
     }
     return message;
+  }
+
+  /** Игра может запретить конкретный текст (например, называть загаданное слово). */
+  private async checkFilter(userId: string, matchId: string, body: string) {
+    const m = await this.prisma.match.findUnique({ where: { id: matchId }, select: { state: true, game: { select: { slug: true } }, players: { select: { userId: true, seat: true } } } });
+    const me = m?.players.find((p) => p.userId === userId);
+    if (!m || !me) return; // дальше resolve вернёт нужную ошибку
+    const err = getGameOrNull(m.game.slug)?.chatFilter?.(m.state, me.seat, body);
+    if (err) throw new RealtimeError('INVALID', err);
   }
 
   async history(userId: string, scope: 'ROOM' | 'MATCH' | 'DIRECT', target: string): Promise<ChatMessageDto[]> {
