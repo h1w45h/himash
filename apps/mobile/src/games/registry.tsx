@@ -13,6 +13,7 @@ import { MafiaTable } from './mafia/MafiaTable';
 import { MonopolyTable } from './monopoly/MonopolyTable';
 import { PokerTable } from './poker/PokerTable';
 import { SvintusTable } from './svintus/SvintusTable';
+import { TtrBoard } from './ttr/TtrBoard';
 import { UnoTable } from './uno/UnoTable';
 
 /** Свойства, которые получает интерфейс любой игры. */
@@ -51,4 +52,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   dixit: DixitTable,
   imaginarium: ImaginariumTable,
   azul: AzulBoard,
+  'ticket-to-ride': TtrBoard,
 };
