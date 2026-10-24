@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { AliasTable } from './alias/AliasTable';
+import { DixitTable, ImaginariumTable } from './association/AssociationTable';
 import { BackgammonBoard } from './backgammon/BackgammonBoard';
 import { BunkerTable } from './bunker/BunkerTable';
 import { CheckersBoard } from './checkers/CheckersBoard';
@@ -46,4 +47,6 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   codenames: CodenamesBoard,
   alias: AliasTable,
   bunker: BunkerTable,
+  dixit: DixitTable,
+  imaginarium: ImaginariumTable,
 };
