@@ -7,6 +7,7 @@ export interface Me {
   displayName: string;
   email: string | null;
   avatarUrl: string | null;
+  avatarId: string | null;
   bio: string | null;
   wallet: { coins: number; gems: number } | null;
   settings: {
@@ -16,6 +17,9 @@ export interface Me {
     pushTournament: boolean;
     allowInvitesFrom: 'EVERYONE' | 'FRIENDS' | 'NOBODY';
     showOnlineStatus: boolean;
+    activeBoardTheme: string | null;
+    activeCardBack: string | null;
+    activeAppTheme: string | null;
   } | null;
 }
 

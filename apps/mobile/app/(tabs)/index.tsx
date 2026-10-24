@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGames } from '@/api/games';
 import { useMe } from '@/api/users';
+import { useShopActions, useWallet } from '@/api/economy';
 import { useActiveMatch, useInvitations, useNotifications } from '@/api/social';
 import { api } from '@/api/client';
 import { Button } from '@/components/ui';
@@ -17,6 +18,8 @@ export default function Home() {
   const active = useActiveMatch();
   const invites = useInvitations();
   const notes = useNotifications();
+  const wallet = useWallet();
+  const shop = useShopActions();
   const popular = games.data?.filter((g) => ['chess', 'durak', 'monopoly'].includes(g.slug)) ?? [];
 
   return (
@@ -29,6 +32,12 @@ export default function Home() {
           {me.data && <Text style={{ color: colors.textMuted }}>🪙 {me.data.wallet?.coins ?? 0}</Text>}
           {me.isLoading && <ActivityIndicator color={colors.primary} />}
         </View>
+        {wallet.data?.daily.available && (
+          <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 14, gap: 8, borderWidth: 1, borderColor: colors.primary }}>
+            <Text style={{ color: colors.text, fontWeight: '700' }}>🎁 Ежедневный бонус: +{wallet.data.daily.nextBonus} монет{wallet.data.daily.streak ? ` (серия ${wallet.data.daily.streak} дн.)` : ''}</Text>
+            <Button title="Забрать" loading={shop.daily.isPending} onPress={() => shop.daily.mutate()} />
+          </View>
+        )}
         {active.data && (
           <View style={{ backgroundColor: colors.primary, borderRadius: 16, padding: 14, gap: 8 }}>
             <Text style={{ color: colors.onPrimary, fontWeight: '800', fontSize: 16 }}>Партия в процессе: {active.data.game.title}</Text>

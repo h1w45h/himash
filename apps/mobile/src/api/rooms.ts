@@ -8,6 +8,7 @@ export interface UserBrief {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  avatarId?: string | null;
 }
 
 export interface RoomPlayer {

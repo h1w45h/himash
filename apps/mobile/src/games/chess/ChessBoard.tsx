@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { feedback } from '@/services/feedback';
+import { useSettings } from '@/stores/settings';
+import { boardTheme } from '@/theme/cosmetics';
 import { useTheme } from '@/theme/useTheme';
 import type { GameUIProps } from '../registry';
 
@@ -10,12 +12,11 @@ type View_ = chess.ChessView;
 type Move = chess.ChessMove;
 
 const GLYPH: Record<string, string> = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
-const LIGHT = '#EBD7B0';
-const DARK = '#B58863';
 
 /** Интерфейс шахмат: тап по фигуре → подсветка ходов → тап по клетке. Доска переворачивается для чёрных. */
 export function ChessBoard({ view, seat, legal, myTurn, onAction, disabled, orientation }: GameUIProps<View_, Move>) {
   const { colors } = useTheme();
+  const { light: LIGHT, dark: DARK } = boardTheme(useSettings((s) => s.boardTheme));
   const { width } = useWindowDimensions();
   const size = Math.min(width - 24, 480);
   const cell = size / 8;

@@ -51,7 +51,7 @@ export default function Profile() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <Avatar name={me.data?.displayName ?? '?'} url={me.data?.avatarUrl} size={64} />
+          <Avatar name={me.data?.displayName ?? '?'} url={me.data?.avatarUrl} avatarId={me.data?.avatarId} size={64} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>{me.data?.displayName ?? 'Профиль'}</Text>
             <Text style={{ color: colors.textMuted }}>@{me.data?.username} · 🪙 {me.data?.wallet?.coins ?? 0}</Text>
@@ -68,6 +68,11 @@ export default function Profile() {
         ) : (
           <Button title="Изменить имя" variant="secondary" onPress={() => { setName(me.data?.displayName ?? ''); setEditing(true); }} />
         )}
+
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flex: 1 }}><Button title="🛍 Магазин" variant="secondary" onPress={() => router.push('/shop')} /></View>
+          <View style={{ flex: 1 }}><Button title="🏆 Достижения" variant="secondary" onPress={() => router.push('/achievements')} /></View>
+        </View>
 
         <Card>
           <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Статистика</Text>

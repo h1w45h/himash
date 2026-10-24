@@ -94,6 +94,7 @@ export interface PublicProfile {
   username: string;
   displayName: string;
   avatarUrl: string | null;
+  avatarId?: string | null;
   bio: string | null;
   ratings: { rating: number; wins: number; losses: number; draws: number; game: { slug: string; title: string } }[];
 }

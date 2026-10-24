@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/auth/AuthProvider';
+import { CosmeticsSync } from '@/components/CosmeticsSync';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { useTheme } from '@/theme/useTheme';
 
@@ -41,6 +42,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <RealtimeProvider>
             <StatusBar style={isDark ? 'light' : 'dark'} />
+            <CosmeticsSync />
             <AuthGate />
           </RealtimeProvider>
         </QueryClientProvider>

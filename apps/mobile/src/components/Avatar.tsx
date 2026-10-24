@@ -1,15 +1,20 @@
 import { Image, Text, View } from 'react-native';
+import { AVATAR_EMOJI } from '@/theme/cosmetics';
 import { useTheme } from '@/theme/useTheme';
 
 const PALETTE = ['#E5484D', '#2F6FED', '#2E9D5B', '#F2A413', '#8E4EC6', '#12A5A5'];
 
 /** Аватар: картинка или инициалы на цветном фоне (цвет зависит от имени, чтобы был стабильным). */
-export function Avatar({ name, url, size = 44, status }: { name: string; url?: string | null; size?: number; status?: 'online' | 'playing' | 'offline' }) {
+export function Avatar({ name, url, avatarId, size = 44, status }: { name: string; url?: string | null; avatarId?: string | null; size?: number; status?: 'online' | 'playing' | 'offline' }) {
   const { colors } = useTheme();
   const color = PALETTE[[...name].reduce((n, c) => n + c.charCodeAt(0), 0) % PALETTE.length];
   return (
     <View style={{ width: size, height: size }}>
-      {url ? (
+      {avatarId && AVATAR_EMOJI[avatarId] ? (
+        <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: size * 0.55 }}>{AVATAR_EMOJI[avatarId]}</Text>
+        </View>
+      ) : url ? (
         <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2 }} />
       ) : (
         <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: color, alignItems: 'center', justifyContent: 'center' }}>

@@ -46,7 +46,7 @@ export default function Friends() {
             {search.data?.length === 0 && <Text style={{ color: colors.textMuted }}>Никого не найдено</Text>}
             {search.data?.map((u) => (
               <Row key={u.id}>
-                <Avatar name={u.displayName} url={u.avatarUrl} />
+                <Avatar name={u.displayName} url={u.avatarUrl} avatarId={u.avatarId} />
                 <Text onPress={() => router.push(`/user/${u.id}`)} style={{ flex: 1, color: colors.text, fontWeight: '600' }}>{u.displayName} <Text style={{ color: colors.textMuted }}>@{u.username}</Text></Text>
                 {friendIds.has(u.id) ? <Text style={{ color: colors.textMuted }}>друг</Text> : pendingIds.has(u.id) ? <Text style={{ color: colors.textMuted }}>заявка</Text> : (
                   <Button title="Добавить" variant="secondary" onPress={() => actions.request.mutate({ userId: u.id })} />
@@ -61,7 +61,7 @@ export default function Friends() {
             <Text style={{ color: colors.text, fontWeight: '700' }}>Заявки</Text>
             {data?.incoming.map((r) => (
               <Row key={r.friendshipId}>
-                <Avatar name={r.user.displayName} url={r.user.avatarUrl} />
+                <Avatar name={r.user.displayName} url={r.user.avatarUrl} avatarId={r.user.avatarId} />
                 <Text style={{ flex: 1, color: colors.text }}>{r.user.displayName}</Text>
                 <Button title="Принять" onPress={() => actions.accept.mutate(r.friendshipId)} />
                 <Button title="✕" variant="secondary" onPress={() => actions.decline.mutate(r.friendshipId)} />
@@ -74,7 +74,7 @@ export default function Friends() {
         {data?.friends.length === 0 && <Text style={{ color: colors.textMuted }}>Пока никого. Найдите друзей по нику выше.</Text>}
         {data?.friends.map((f) => (
           <Row key={f.friendshipId}>
-            <Avatar name={f.user.displayName} url={f.user.avatarUrl} status={f.status} />
+            <Avatar name={f.user.displayName} url={f.user.avatarUrl} avatarId={f.user.avatarId} status={f.status} />
             <View style={{ flex: 1 }}>
               <Text onPress={() => router.push(`/user/${f.user.id}`)} style={{ color: colors.text, fontWeight: '600' }}>{f.user.displayName}</Text>
               <Text style={{ color: f.status === 'offline' ? colors.textMuted : colors.success, fontSize: 12 }}>{STATUS_TEXT[f.status]}</Text>
@@ -102,7 +102,7 @@ export default function Friends() {
             <Text style={{ color: colors.textMuted }}>Исходящие заявки</Text>
             {data?.outgoing.map((r) => (
               <Row key={r.friendshipId}>
-                <Avatar name={r.user.displayName} url={r.user.avatarUrl} size={36} />
+                <Avatar name={r.user.displayName} url={r.user.avatarUrl} avatarId={r.user.avatarId} size={36} />
                 <Text style={{ flex: 1, color: colors.text }}>{r.user.displayName}</Text>
                 <Button title="Отменить" variant="secondary" onPress={() => actions.remove.mutate(r.user.id)} />
               </Row>

@@ -4,6 +4,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { Button } from '@/components/ui';
 import { feedback } from '@/services/feedback';
+import { useSettings } from '@/stores/settings';
+import { cardBackColor } from '@/theme/cosmetics';
 import { useTheme } from '@/theme/useTheme';
 import type { GameUIProps } from '../registry';
 
@@ -35,7 +37,8 @@ function CardFace({ card, w = 52, selected, dim, trump }: { card: Card; w?: numb
 }
 
 function CardBack({ w = 30 }: { w?: number }) {
-  return <View style={{ width: w, height: w * 1.4, borderRadius: 5, backgroundColor: '#2B4C7E', borderWidth: 2, borderColor: '#E6EAF2' }} />;
+  const color = cardBackColor(useSettings((s) => s.cardBack));
+  return <View style={{ width: w, height: w * 1.4, borderRadius: 5, backgroundColor: color, borderWidth: 2, borderColor: '#E6EAF2' }} />;
 }
 
 const same = (a: Card, b: Card) => a.rank === b.rank && a.suit === b.suit;

@@ -21,7 +21,7 @@ export default function Leaderboard() {
       renderItem={({ item, index }) => (
         <Pressable onPress={() => router.push(`/user/${item.user.id}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: radius.md, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}>
           <Text style={{ width: 28, color: index < 3 ? colors.primary : colors.textMuted, fontWeight: '800', fontSize: 16 }}>{index + 1}</Text>
-          <Avatar name={item.user.displayName} url={item.user.avatarUrl} size={36} />
+          <Avatar name={item.user.displayName} url={item.user.avatarUrl} avatarId={item.user.avatarId} size={36} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.text, fontWeight: '600' }}>{item.user.displayName}</Text>
             <Text style={{ color: colors.textMuted, fontSize: 12 }}>{item.wins}–{item.losses}–{item.draws}</Text>

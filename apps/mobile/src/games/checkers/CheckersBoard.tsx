@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { feedback } from '@/services/feedback';
+import { useSettings } from '@/stores/settings';
+import { boardTheme } from '@/theme/cosmetics';
 import { useTheme } from '@/theme/useTheme';
 import type { GameUIProps } from '../registry';
 
 type S = checkers.CheckersState;
 type Move = checkers.CheckersMove;
 
-const LIGHT = '#EBD7B0';
-const DARK = '#8B5A2B';
 
 const startsWith = (path: number[], prefix: number[]) => prefix.every((v, i) => path[i] === v);
 
@@ -20,6 +20,10 @@ const startsWith = (path: number[], prefix: number[]) => prefix.every((v, i) => 
  */
 export function CheckersBoard({ view, seat, legal, myTurn, onAction, disabled, orientation }: GameUIProps<S, Move>) {
   const { colors } = useTheme();
+  // Для шашек «тёмные» клетки — игровые; берём цвета выбранной темы доски (классическая — коричневая).
+  const theme = boardTheme(useSettings((s) => s.boardTheme));
+  const LIGHT = theme.light;
+  const DARK = useSettings((s) => s.boardTheme) ? theme.dark : '#8B5A2B';
   const { width } = useWindowDimensions();
   const size = Math.min(width - 24, 480);
   const cell = size / 8;

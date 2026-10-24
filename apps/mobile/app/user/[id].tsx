@@ -24,7 +24,7 @@ export default function UserProfile() {
     <ScrollView contentContainerStyle={{ padding: 20, gap: 14 }} style={{ backgroundColor: colors.bg }}>
       <Stack.Screen options={{ headerShown: true, title: p.displayName, headerStyle: { backgroundColor: colors.bg }, headerTintColor: colors.text }} />
       <View style={{ alignItems: 'center', gap: 6 }}>
-        <Avatar name={p.displayName} url={p.avatarUrl} size={88} />
+        <Avatar name={p.displayName} url={p.avatarUrl} avatarId={p.avatarId} size={88} />
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800' }}>{p.displayName}</Text>
         <Text style={{ color: colors.textMuted }}>@{p.username}</Text>
         {p.bio && <Text style={{ color: colors.text, textAlign: 'center' }}>{p.bio}</Text>}
