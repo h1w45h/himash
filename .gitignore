@@ -11,3 +11,4 @@ dist/
 *.tsbuildinfo
 .env*
 !.env.example
+dump.rdb
