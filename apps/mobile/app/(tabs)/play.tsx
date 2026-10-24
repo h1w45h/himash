@@ -33,6 +33,7 @@ export default function Play() {
           <Button title="Быстрый поиск соперника" disabled={!ready} onPress={() => router.push({ pathname: '/matchmaking', params: { game: slug } })} />
           <Button title="Создать комнату" variant="secondary" disabled={!ready} onPress={() => router.push({ pathname: '/rooms/create', params: { game: slug } })} />
           <Button title="Открытые комнаты" variant="secondary" onPress={() => router.push('/rooms')} />
+          <Button title="🏆 Турниры" variant="secondary" onPress={() => router.push('/tournaments')} />
         </View>
 
         <View style={{ gap: 10, marginTop: 8 }}>
