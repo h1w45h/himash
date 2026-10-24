@@ -13,6 +13,7 @@ import { RoomsService } from '../rooms/rooms.service';
 
 const enabled = !!process.env.DATABASE_URL && !!process.env.REDIS_URL;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const emit = <T>(s: Socket, ev: string, body: unknown) => s.emitWithAck(ev, body) as Promise<Ack<T>>;
 const once = <T>(s: Socket, ev: string, ms = 4000) =>
   new Promise<T>((res, rej) => {
@@ -287,5 +288,24 @@ describe.skipIf(!enabled)('реал-тайм: партия через Socket.io 
     expect(await emit(first.s, 'match:action', { matchId, expectedVersion: 0, action: { t: 'fold' } })).toMatchObject({ ok: true });
     const u = await upd;
     expect((u.view as { handNo: number }).handNo).toBe(2);
+  });
+
+  it('одновременные действия: по таймауту ходят все ещё не походившие (Свинтус)', async () => {
+    const [a, b, c] = [await mkUser('sv1'), await mkUser('sv2'), await mkUser('sv3')];
+    const room = await rooms.create(a.id, { gameSlug: 'svintus', maxPlayers: 3, visibility: 'PRIVATE', isRated: false });
+    await rooms.join(b.id, room.code);
+    await rooms.join(c.id, room.code);
+    await rooms.setReady(b.id, room.code, true);
+    await rooms.setReady(c.id, room.code, true);
+    const started = await rooms.start(a.id, room.code);
+    const matchId = started.matchId as string;
+    expect(started.turnTimeSec).toBe(45); // таймер по умолчанию для игры
+    await prisma.match.update({ where: { id: matchId }, data: { turnDeadline: new Date(Date.now() - 1000) } });
+    let version = 0;
+    for (let i = 0; i < 40 && version < 3; i++) {
+      await sleep(100);
+      version = (await prisma.match.findUniqueOrThrow({ where: { id: matchId } })).stateVersion;
+    }
+    expect(version).toBeGreaterThanOrEqual(3); // трое выбрали карту — раунд передачи состоялся
   });
 });

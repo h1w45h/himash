@@ -6,6 +6,7 @@ import { DurakTable } from './durak/DurakTable';
 import { GoBoard } from './go/GoBoard';
 import { MonopolyTable } from './monopoly/MonopolyTable';
 import { PokerTable } from './poker/PokerTable';
+import { SvintusTable } from './svintus/SvintusTable';
 import { UnoTable } from './uno/UnoTable';
 
 /** Свойства, которые получает интерфейс любой игры. */
@@ -36,4 +37,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   poker: PokerTable,
   backgammon: BackgammonBoard,
   go: GoBoard,
+  svintus: SvintusTable,
 };
