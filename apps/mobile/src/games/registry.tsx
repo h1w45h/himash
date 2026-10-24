@@ -4,6 +4,7 @@ import { DixitTable, ImaginariumTable } from './association/AssociationTable';
 import { AzulBoard } from './azul/AzulBoard';
 import { BackgammonBoard } from './backgammon/BackgammonBoard';
 import { BunkerTable } from './bunker/BunkerTable';
+import { CarcassonneBoard } from './carcassonne/CarcassonneBoard';
 import { CatanBoard } from './catan/CatanBoard';
 import { CheckersBoard } from './checkers/CheckersBoard';
 import { ChessBoard } from './chess/ChessBoard';
@@ -55,4 +56,5 @@ export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
   azul: AzulBoard,
   'ticket-to-ride': TtrBoard,
   catan: CatanBoard,
+  carcassonne: CarcassonneBoard,
 };
