@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/auth/AuthProvider';
+import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { useTheme } from '@/theme/useTheme';
 
 /** Перенаправляет неавторизованных в (auth), авторизованных — из (auth) в приложение. */
@@ -34,8 +35,10 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
-          <StatusBar style={isDark ? 'light' : 'dark'} />
-          <AuthGate />
+          <RealtimeProvider>
+            <StatusBar style={isDark ? 'light' : 'dark'} />
+            <AuthGate />
+          </RealtimeProvider>
         </QueryClientProvider>
       </AuthProvider>
     </GestureHandlerRootView>

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateRoomDto, MatchmakingStatus } from '@nastolki/shared';
+import { useSocketStore } from '@/realtime/socket';
 import { api } from './client';
 
 export interface UserBrief {
@@ -43,13 +44,16 @@ export const usePublicRooms = (game?: string) =>
     refetchInterval: 5000, // до появления сокетов (шаг 5) список обновляем опросом
   });
 
-/** Комната-лобби. Опрос заменится событиями `room:updated` в реал-тайм слое. */
-export const useRoom = (code: string) =>
-  useQuery({
+/** Комната-лобби: живые обновления через `useRoomLive`, REST — первичная загрузка и запасной канал. */
+export function useRoom(code: string) {
+  const live = useSocketStore((s) => s.connected);
+  return useQuery({
     queryKey: ['rooms', code],
     queryFn: () => api<Room>(`/rooms/${code}`),
-    refetchInterval: 2000,
+    // Есть сокет — события приходят сами, опрос лишь страховка; нет сокета — опрашиваем часто.
+    refetchInterval: live ? 15_000 : 2000,
   });
+}
 
 export function useRoomActions(code?: string) {
   const qc = useQueryClient();

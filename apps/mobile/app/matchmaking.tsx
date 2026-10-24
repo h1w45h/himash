@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { matchmaking } from '@/api/rooms';
+import { useSocketStore } from '@/realtime/socket';
 import { Button, ErrorText } from '@/components/ui';
 import { useTheme } from '@/theme/useTheme';
 
@@ -13,6 +14,20 @@ export default function Matchmaking() {
   const [waited, setWaited] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const done = useRef(false);
+  const socket = useSocketStore((st) => st.socket);
+
+  // Сокет сообщает о найденной партии мгновенно; опрос ниже — запасной путь.
+  useEffect(() => {
+    if (!socket) return;
+    const onFound = (f: { matchId: string }) => {
+      done.current = true;
+      router.replace(`/match/${f.matchId}`);
+    };
+    socket.on('mm:found', onFound);
+    return () => {
+      socket.off('mm:found', onFound);
+    };
+  }, [socket, router]);
 
   useEffect(() => {
     let cancelled = false;

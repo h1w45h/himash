@@ -3,6 +3,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, Share, Text, View } from 'react-native';
 import { useMe } from '@/api/users';
+import { ChatPanel } from '@/components/ChatPanel';
+import { useRoomLive } from '@/realtime/useRoomLive';
 import { useRoom, useRoomActions } from '@/api/rooms';
 import { Button, ErrorText } from '@/components/ui';
 import { radius } from '@/theme/tokens';
@@ -16,6 +18,7 @@ export default function RoomLobby() {
   const me = useMe(!!isSignedIn);
   const { data: room, error, isLoading } = useRoom(code);
   const actions = useRoomActions(code);
+  useRoomLive(code);
 
   // Партия началась — переходим к игре.
   useEffect(() => {
@@ -60,6 +63,8 @@ export default function RoomLobby() {
       })}
 
       <ErrorText>{err?.message}</ErrorText>
+
+      {mine && <ChatPanel scope="ROOM" target={room.code} myUserId={myId} />}
 
       {isHost ? (
         <>
