@@ -35,6 +35,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
   private readonly log = new Logger(MatchRuntime.name);
   private sweeper?: NodeJS.Timeout;
+  private stopped = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -53,6 +54,7 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
     for (const m of live) this.scheduleBot(m.id);
   }
   onModuleDestroy() {
+    this.stopped = true; // не начинаем новые проверки во время остановки (БД уже закрывается)
     if (this.sweeper) clearInterval(this.sweeper);
   }
 
@@ -375,6 +377,7 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
   }
 
   private async sweepTimeouts() {
+    if (this.stopped) return;
     try {
       if (!(await this.redis.set('rt:sweep:lock', '1', 'PX', 900, 'NX'))) return;
       const due = await this.prisma.match.findMany({
