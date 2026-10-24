@@ -7,7 +7,7 @@ export const cardGames: CatalogGame[] = [
     tagline: 'Подкидной и переводной',
     description: 'Самая популярная карточная игра на 2–6 игроков. Два варианта: подкидной и переводной.',
     category: 'CARD', minPlayers: 2, maxPlayers: 6, avgMinutes: 15, complexity: 2,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED', hiddenInfo: true,
     variants: [{ key: 'podkidnoy', title: 'Подкидной' }, { key: 'perevodnoy', title: 'Переводной' }],
     rulesMarkdown: `## Цель
 Избавиться от всех карт. Последний, у кого остались карты, — «дурак».

@@ -1,0 +1,27 @@
+/** Подписи мест и причин окончания партии — общие для онлайн и оффлайн экранов. */
+export function seatLabel(slug: string, seat: number): string {
+  if (slug === 'chess' || slug === 'checkers') return seat === 0 ? 'Белые' : 'Чёрные';
+  return `Игрок ${seat + 1}`;
+}
+
+export const BOT_LEVELS = [
+  { level: 'EASY', title: 'Новичок' },
+  { level: 'MEDIUM', title: 'Любитель' },
+  { level: 'HARD', title: 'Опытный' },
+  { level: 'EXPERT', title: 'Эксперт' },
+] as const;
+export type BotLevelKey = (typeof BOT_LEVELS)[number]['level'];
+
+export const botTitle = (level: string) => BOT_LEVELS.find((l) => l.level === level)?.title ?? level;
+
+const REASONS: Record<string, string> = {
+  checkmate: 'мат',
+  stalemate: 'пат — ничья',
+  insufficient: 'недостаточно материала — ничья',
+  repetition: 'троекратное повторение — ничья',
+  fifty: 'правило 50 ходов — ничья',
+  resign: 'сдача',
+  timeout: 'время на ход вышло',
+  abandoned: 'партия прервана',
+};
+export const reasonText = (reason: string) => REASONS[reason] ?? reason;

@@ -7,16 +7,10 @@ import { ChatPanel } from '@/components/ChatPanel';
 import { Button, ErrorText } from '@/components/ui';
 import { GAME_UIS } from '@/games/registry';
 import { GenericBoard } from '@/games/GenericBoard';
+import { reasonText } from '@/games/meta';
 import { useCountdown, useMatch } from '@/realtime/useMatch';
 import { radius } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
-
-const REASONS: Record<string, string> = {
-  resign: 'соперник сдался',
-  timeout: 'время на ход вышло',
-  abandoned: 'партия прервана',
-  checkmate: 'мат',
-};
 
 export default function MatchScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,7 +70,7 @@ export default function MatchScreen() {
           <Text style={{ color: colors.text, fontSize: 22, fontWeight: '800', textAlign: 'center' }}>
             {snap.outcome?.winners.length === 0 ? 'Ничья' : mine && snap.outcome?.winners.includes(mine.seat) ? 'Победа! 🎉' : 'Поражение'}
           </Text>
-          {snap.outcome && <Text style={{ color: colors.textMuted, textAlign: 'center' }}>Причина: {REASONS[snap.outcome.reason] ?? snap.outcome.reason}</Text>}
+          {snap.outcome && <Text style={{ color: colors.textMuted, textAlign: 'center' }}>Причина: {reasonText(snap.outcome.reason)}</Text>}
           {mine?.ratingDelta != null && (
             <Text style={{ color: mine.ratingDelta >= 0 ? colors.success : colors.danger, textAlign: 'center', fontWeight: '700' }}>
               Рейтинг: {mine.ratingDelta >= 0 ? '+' : ''}{mine.ratingDelta}

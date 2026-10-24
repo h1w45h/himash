@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import { useAuth } from '@clerk/clerk-expo';
+import { registerBuiltinGames } from '@nastolki/game-engine';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,6 +9,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { useTheme } from '@/theme/useTheme';
+
+// Движки игр нужны для оффлайн-партий и интерфейсов — регистрируем один раз при запуске.
+registerBuiltinGames();
 
 /** Перенаправляет неавторизованных в (auth), авторизованных — из (auth) в приложение. */
 function AuthGate() {

@@ -12,7 +12,7 @@ export interface GameFilters {
 const listSelect = {
   id: true, slug: true, title: true, tagline: true, description: true, category: true,
   minPlayers: true, maxPlayers: true, avgMinutes: true, complexity: true, coverUrl: true, iconUrl: true,
-  hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, variants: true, status: true,
+  hasBots: true, hiddenInfo: true, supportsLocal: true, supportsOnline: true, isRated: true, variants: true, status: true,
 } satisfies Prisma.GameSelect;
 
 @Injectable()

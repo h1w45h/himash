@@ -209,6 +209,7 @@ model Game {
   supportsLocal  Boolean        @default(true)
   supportsOnline Boolean        @default(true)
   isRated        Boolean        @default(true) // участвует ли в рейтинге
+  hiddenInfo     Boolean        @default(false) // есть скрытая информация (карты на руках)
   variants       Json? // варианты правил: [{ key:'podkidnoy', title:'Подкидной' }, ...]
   status         GameImplStatus @default(PLANNED)
   sortOrder      Int            @default(0)

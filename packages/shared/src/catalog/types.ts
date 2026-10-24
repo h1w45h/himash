@@ -23,6 +23,8 @@ export interface CatalogGame {
   supportsOnline: boolean;
   isRated: boolean;
   variants?: GameVariant[];
+  /** Есть ли скрытая информация (карты на руках): для pass-and-play нужен экран передачи устройства. */
+  hiddenInfo?: boolean;
   status: GameImplStatus;
 }
 

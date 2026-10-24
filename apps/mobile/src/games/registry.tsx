@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { ChessBoard } from './chess/ChessBoard';
 
 /** Свойства, которые получает интерфейс любой игры. */
 export interface GameUIProps<View = unknown, Action = unknown> {
@@ -11,10 +12,14 @@ export interface GameUIProps<View = unknown, Action = unknown> {
   /** Отправить действие. Для оффлайн-режимов подменяется локальным исполнителем. */
   onAction: (action: Action) => void;
   disabled: boolean;
+  /** Чьими глазами смотреть на стол (место снизу). По умолчанию — `seat`. */
+  orientation?: number;
 }
 
 /**
  * Реестр интерфейсов игр. Новая игра = компонент здесь + движок в game-engine.
  * Пока для игры нет собственного интерфейса, используется универсальный (GenericBoard).
  */
-export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {};
+export const GAME_UIS: Record<string, ComponentType<GameUIProps<any, any>>> = {
+  chess: ChessBoard,
+};

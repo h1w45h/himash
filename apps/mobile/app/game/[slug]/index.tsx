@@ -1,10 +1,12 @@
 import { CATEGORY_TITLES } from '@nastolki/shared';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useGame } from '@/api/games';
 import { complexityLabel, playersLabel } from '@/components/GameCard';
 import { Markdown } from '@/components/Markdown';
 import { Button } from '@/components/ui';
+import { BOT_LEVELS, type BotLevelKey } from '@/games/meta';
 import { useTheme } from '@/theme/useTheme';
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -21,6 +23,8 @@ export default function GameScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { colors } = useTheme();
   const router = useRouter();
+  const [level, setLevel] = useState<BotLevelKey>('MEDIUM');
+  const [second, setSecond] = useState(false);
   const { data: game, isLoading } = useGame(slug);
 
   if (!game) {
@@ -46,8 +50,19 @@ export default function GameScreen() {
           {soon && <Text style={{ color: colors.textMuted }}>Игра появится в одном из ближайших обновлений.</Text>}
           {game.supportsOnline && <Button title="Играть онлайн" onPress={() => router.push({ pathname: '/matchmaking', params: { game: slug } })} disabled={soon} />}
           {game.supportsOnline && <Button title="Создать комнату" variant="secondary" onPress={() => router.push({ pathname: '/rooms/create', params: { game: slug } })} disabled={soon} />}
-          {game.hasBots && <Button title="Против бота" variant="secondary" onPress={() => {}} disabled={soon} />}
-          {game.supportsLocal && <Button title="На одном устройстве" variant="secondary" onPress={() => {}} disabled={soon} />}
+          {game.supportsLocal && <Button title="На одном устройстве" variant="secondary" onPress={() => router.push({ pathname: '/local/[slug]', params: { slug } })} disabled={soon} />}
+          {game.hasBots && !soon && (
+            <View style={{ gap: 8, backgroundColor: colors.surface, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ color: colors.text, fontWeight: '700' }}>Против бота</Text>
+              <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                {BOT_LEVELS.map((l) => (
+                  <Button key={l.level} title={l.title} variant={level === l.level ? 'primary' : 'secondary'} onPress={() => setLevel(l.level)} />
+                ))}
+              </View>
+              <Button title={second ? 'Я хожу вторым' : 'Я хожу первым'} variant="secondary" onPress={() => setSecond((v) => !v)} />
+              <Button title="Играть с ботом" onPress={() => router.push({ pathname: '/bot/[slug]', params: { slug, level, second: second ? '1' : '0' } })} />
+            </View>
+          )}
         </View>
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', marginTop: 8 }}>Правила</Text>
         <Markdown source={game.rulesMarkdown} />
