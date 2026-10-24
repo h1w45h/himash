@@ -1,11 +1,15 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { usePushSetup } from '@/services/push';
 import { connectSocket, disconnectSocket } from './socket';
+import { usePresence } from './usePresence';
 
 /** Держит соединение, пока пользователь авторизован; при возврате из фона проверяет его. */
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const { isSignedIn, getToken } = useAuth();
+  usePresence();
+  usePushSetup(!!isSignedIn);
 
   useEffect(() => {
     if (!isSignedIn) {

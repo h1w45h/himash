@@ -82,6 +82,7 @@ export default function GameScreen() {
             </View>
           )}
         </View>
+        {!soon && game.isRated && <Button title="Таблица лидеров" variant="secondary" onPress={() => router.push(`/leaderboard/${slug}`)} />}
         <Text style={{ color: colors.text, fontSize: 24, fontWeight: '800', marginTop: 8 }}>Правила</Text>
         <Markdown source={game.rulesMarkdown} />
       </ScrollView>

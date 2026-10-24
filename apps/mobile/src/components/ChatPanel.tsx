@@ -8,12 +8,12 @@ import { radius } from '@/theme/tokens';
 import { useTheme } from '@/theme/useTheme';
 
 /** Чат комнаты или партии: история по REST, новые сообщения по сокету. */
-export function ChatPanel({ scope, target, myUserId }: { scope: 'ROOM' | 'MATCH'; target: string; myUserId: string }) {
+export function ChatPanel({ scope, target, myUserId }: { scope: 'ROOM' | 'MATCH' | 'DIRECT'; target: string; myUserId: string }) {
   const { colors } = useTheme();
   const socket = useSocketStore((s) => s.socket);
   const history = useQuery({
     queryKey: ['chat', scope, target],
-    queryFn: () => api<ChatMessageDto[]>(`/chat/${scope === 'ROOM' ? 'rooms' : 'matches'}/${target}`),
+    queryFn: () => api<ChatMessageDto[]>(`/chat/${scope === 'ROOM' ? 'rooms' : scope === 'MATCH' ? 'matches' : 'direct'}/${target}`),
   });
   const [live, setLive] = useState<ChatMessageDto[]>([]);
   const [text, setText] = useState('');
@@ -22,12 +22,17 @@ export function ChatPanel({ scope, target, myUserId }: { scope: 'ROOM' | 'MATCH'
 
   useEffect(() => {
     if (!socket) return;
-    const onMsg = (m: ChatMessageDto) => setLive((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+    const onMsg = (m: ChatMessageDto) => {
+      // Личные сообщения не должны попадать в чат комнаты/партии и наоборот.
+      if ((scope === 'DIRECT') !== (m.scope === 'DIRECT')) return;
+      if (scope === 'DIRECT' && m.sender?.id !== target && m.recipientId !== target) return;
+      setLive((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+    };
     socket.on('chat:message', onMsg);
     return () => {
       socket.off('chat:message', onMsg);
     };
-  }, [socket]);
+  }, [socket, scope, target]);
 
   const all = [...(history.data ?? []), ...live].filter((m, i, a) => a.findIndex((x) => x.id === m.id) === i);
 
@@ -50,7 +55,7 @@ export function ChatPanel({ scope, target, myUserId }: { scope: 'ROOM' | 'MATCH'
         ref={list}
         data={all}
         keyExtractor={(m) => m.id}
-        style={{ maxHeight: 220 }}
+        style={{ maxHeight: scope === 'DIRECT' ? undefined : 220, flexGrow: scope === 'DIRECT' ? 1 : 0 }}
         onContentSizeChange={() => list.current?.scrollToEnd({ animated: true })}
         ListEmptyComponent={<Text style={{ color: colors.textMuted }}>Сообщений пока нет</Text>}
         renderItem={({ item }) => {

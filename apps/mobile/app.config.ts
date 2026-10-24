@@ -10,7 +10,7 @@ const config: ExpoConfig = {
   newArchEnabled: true,
   ios: { bundleIdentifier: 'online.nastolki.app', supportsTablet: true, usesAppleSignIn: true },
   android: { package: 'online.nastolki.app' },
-  plugins: ['expo-router', 'expo-secure-store'],
+  plugins: ['expo-router', 'expo-secure-store', ['expo-notifications', { color: '#C2410C' }]],
   experiments: { typedRoutes: true },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000',

@@ -76,3 +76,8 @@ export const matchmaking = {
   leave: () => api<{ ok: true }>('/matchmaking', { method: 'DELETE' }),
   status: () => api<MatchmakingStatus>('/matchmaking/status'),
 };
+
+/** Комната, в которой я сейчас нахожусь (для кнопки «Пригласить» у друзей). */
+export const useMyRoom = () => useQuery({ queryKey: ['rooms', 'mine'], queryFn: () => api<Room | null>('/rooms/mine'), refetchInterval: 20_000 });
+
+export const inviteToRoom = (code: string, userId: string) => api(`/rooms/${code}/invite`, { method: 'POST', json: { userId } });
