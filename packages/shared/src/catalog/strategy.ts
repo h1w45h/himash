@@ -39,8 +39,8 @@ export const strategyGames: CatalogGame[] = [
     title: 'Колонизаторы',
     tagline: 'Торгуйте и стройте на острове Катан',
     description: 'Культовая стратегия про ресурсы, торговлю и расширение: до 10 победных очков.',
-    category: 'STRATEGY', minPlayers: 3, maxPlayers: 4, avgMinutes: 75, complexity: 3,
-    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'PLANNED',
+    category: 'STRATEGY', minPlayers: 2, maxPlayers: 4, avgMinutes: 75, complexity: 3,
+    hasBots: true, supportsLocal: true, supportsOnline: true, isRated: true, status: 'BETA', hiddenInfo: true,
     rulesMarkdown: `## Цель
 Первым набрать **10 победных очков**.
 
@@ -56,7 +56,10 @@ export const strategyGames: CatalogGame[] = [
 При выпадении 7: игроки с более чем 7 картами сбрасывают половину, вы перемещаете разбойника на любую землю и крадёте карту у соседа.
 
 ## Бонусы
-«Величайший тракт» (дорога от 5 сегментов) и «Величайшая армия» (3+ рыцаря) дают по 2 очка.`,
+«Самая длинная дорога» (непрерывная, от 5 сегментов; чужое поселение её прерывает) и «Самое большое войско» (от 3 сыгранных рыцарей) дают по 2 очка.
+
+## Подготовка и торговля
+Каждый ставит два поселения и две дороги (во втором поселении получает ресурсы с соседних земель). Предложение обмена можно сделать всем сразу — до трёх раз за ход. Карту развития нельзя сыграть в ход покупки; одна карта за ход.`,
   },
   {
     slug: 'carcassonne',
