@@ -393,19 +393,26 @@ export class MatchRuntime implements OnModuleInit, OnModuleDestroy {
 
   private async handleTimeout(matchId: string) {
     await this.withLock(matchId, async () => {
-      const m = await this.load(matchId);
+      let m = await this.load(matchId);
       // Пока ждали блокировку, ход мог быть сделан — перепроверяем.
       if (!m || m.status !== 'IN_PROGRESS' || !m.turnDeadline || m.turnDeadline > new Date()) return;
       const game = getGame(m.game.slug);
-      const seat = game.currentSeats(m.state)[0];
-      if (seat === undefined) return;
-      const player = m.players.find((p) => p.seat === seat);
-      if (player?.isBot) return this.runBot(m);
-      const auto = game.timeoutAction?.(m.state, seat) ?? null;
-      if (auto !== null) {
-        await this.step(m, seat, auto);
-      } else {
-        await this.leaveSeat(m, seat, 'timeout');
+      // Одновременные действия (голосование, выбор карт): таймаут касается всех, кто ещё не сходил.
+      const seats = [...game.currentSeats(m.state)];
+      for (const seat of seats) {
+        m = await this.load(matchId);
+        if (!m || m.status !== 'IN_PROGRESS' || !game.currentSeats(m.state).includes(seat)) continue;
+        const player = m.players.find((p) => p.seat === seat);
+        if (player?.isBot) {
+          await this.runBot(m);
+          continue;
+        }
+        const auto = game.timeoutAction?.(m.state, seat) ?? null;
+        if (auto !== null) await this.step(m, seat, auto);
+        else {
+          await this.leaveSeat(m, seat, 'timeout');
+          break; // состав игроков изменился — остальное решит следующая проверка
+        }
       }
     });
   }

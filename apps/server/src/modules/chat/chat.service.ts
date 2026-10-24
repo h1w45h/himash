@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { getGameOrNull } from '@nastolki/game-engine';
 import { RealtimeError, normalizeRoomCode, type ChatMessageDto, type ChatSendDto } from '@nastolki/shared';
 import { DomainEvents } from '../../common/events.module';
 import { PrismaService } from '../../common/prisma.module';
@@ -20,7 +21,7 @@ export class ChatService {
   ) {}
 
   /** Определяет, к какой сущности относится сообщение, и проверяет, что отправитель — её участник. */
-  private async resolve(userId: string, scope: 'ROOM' | 'MATCH' | 'DIRECT', target: string) {
+  private async resolve(userId: string, scope: 'ROOM' | 'MATCH' | 'DIRECT', target: string, forWriting = false) {
     if (scope === 'DIRECT') {
       if (target === userId) throw new RealtimeError('INVALID', 'Нельзя писать самому себе');
       if (await isBlockedBetween(this.prisma, userId, target)) throw new RealtimeError('FORBIDDEN', 'Переписка недоступна');
@@ -39,10 +40,15 @@ export class ChatService {
     }
     const match = await this.prisma.match.findUnique({
       where: { id: target },
-      select: { id: true, players: { select: { userId: true } } },
+      select: { id: true, state: true, players: { select: { userId: true, seat: true } }, game: { select: { slug: true } } },
     });
     if (!match) throw new RealtimeError('NOT_FOUND', 'Партия не найдена');
-    if (!match.players.some((p) => p.userId === userId)) throw new RealtimeError('FORBIDDEN', 'Вы не участник партии');
+    const mine = match.players.find((p) => p.userId === userId);
+    if (!mine) throw new RealtimeError('FORBIDDEN', 'Вы не участник партии');
+    // Игра может ограничивать чат (ночью в «Мафии», для выбывших игроков).
+    if (forWriting && getGameOrNull(match.game.slug)?.chatAllowed?.(match.state, mine.seat) === false) {
+      throw new RealtimeError('FORBIDDEN', 'Сейчас писать в чат нельзя');
+    }
     return { roomId: null, matchId: match.id, recipientId: null, keys: [`match:${match.id}`] };
   }
 
@@ -52,7 +58,7 @@ export class ChatService {
     if (count === 1) await this.redis.expire(rlKey, RATE_WINDOW_SEC);
     if (count > RATE_LIMIT) throw new RealtimeError('RATE_LIMIT', 'Слишком часто. Подождите немного.');
 
-    const t = await this.resolve(userId, dto.scope, dto.target);
+    const t = await this.resolve(userId, dto.scope, dto.target, true);
     const row = await this.prisma.chatMessage.create({
       data: { scope: dto.scope, senderId: userId, roomId: t.roomId, matchId: t.matchId, recipientId: t.recipientId, body: dto.body },
       include: { sender: { select: userBrief } },

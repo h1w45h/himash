@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { BotLevel, Prisma, Room } from '@prisma/client';
 import { hasGame } from '@nastolki/game-engine';
-import { normalizeRoomCode, type CreateRoomDto } from '@nastolki/shared';
+import { DEFAULT_TURN_SEC, normalizeRoomCode, type CreateRoomDto } from '@nastolki/shared';
 import { DomainEvents } from '../../common/events.module';
 import { PrismaService } from '../../common/prisma.module';
 import { hashPassword, verifyPassword } from '../../common/security';
@@ -135,7 +135,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
             maxPlayers: dto.maxPlayers,
             minPlayers: game.minPlayers,
             isRated: dto.isRated && game.isRated,
-            turnTimeSec: dto.turnTimeSec,
+            turnTimeSec: dto.turnTimeSec ?? DEFAULT_TURN_SEC[game.slug],
             variantKey: dto.variantKey,
             passwordHash: dto.password ? hashPassword(dto.password) : null,
             players: { create: { userId, seat: 0, isReady: true } }, // хозяин всегда готов
@@ -312,7 +312,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
             hostId: userIds[0] as string,
             visibility: 'PRIVATE',
             mode: opts.mode ?? 'ONLINE',
-            turnTimeSec: opts.turnTimeSec,
+            turnTimeSec: opts.turnTimeSec ?? DEFAULT_TURN_SEC[game.slug],
             maxPlayers: userIds.length,
             minPlayers: userIds.length,
             isRated: game.isRated,

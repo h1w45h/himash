@@ -56,6 +56,8 @@ export interface GameDefinition<State, Action, View = State, Options = unknown> 
   redactAction?(action: Action, actor: Seat, viewer: Seat | null): Action | null;
   /** Выбор хода ботом; отсутствует — для игры нет бота. */
   chooseBotAction?(state: State, seat: Seat, bot: BotContext): Action;
+  /** Можно ли игроку писать в чат партии прямо сейчас (мафия ночью, выбывшие игроки и т.п.). По умолчанию — можно. */
+  chatAllowed?(state: State, seat: Seat): boolean;
   /** Действие, выполняемое при истечении таймера хода. */
   timeoutAction?(state: State, seat: Seat): Action | null;
 }
