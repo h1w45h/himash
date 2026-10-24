@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.5.0",
+    "@expo/vector-icons": "^14.1.0",
     "@nastolki/game-engine": "*",
     "@nastolki/shared": "*",
     "@tanstack/react-query": "^5.59.0",

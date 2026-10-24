@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './common/prisma.module';
 import { RedisModule } from './common/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { GamesModule } from './modules/games/games.module';
 import { UsersModule } from './modules/users/users.module';
 import { HealthController } from './modules/health/health.controller';
 
@@ -16,6 +17,7 @@ import { HealthController } from './modules/health/health.controller';
     RedisModule,
     AuthModule,
     UsersModule,
+    GamesModule,
   ],
   controllers: [HealthController],
 })
